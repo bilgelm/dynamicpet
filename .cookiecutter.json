@@ -1,0 +1,14 @@
+{
+  "_output_dir": "/Users/bilgelm/Research/projects",
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Murat Bilgel",
+  "copyright_year": "2022",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "bilgelm@gmail.com",
+  "friendly_name": "Dynamic PET",
+  "github_user": "bilgelm",
+  "license": "MIT",
+  "package_name": "dynamicpet",
+  "project_name": "dynamicpet",
+  "version": "0.1.0"
+}
