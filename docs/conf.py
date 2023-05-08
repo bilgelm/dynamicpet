@@ -1,7 +1,7 @@
 """Sphinx configuration."""
 project = "Dynamic PET"
 author = "Murat Bilgel"
-copyright = "2022, Murat Bilgel"
+copyright = "2023, Murat Bilgel"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
@@ -9,4 +9,5 @@ extensions = [
     "myst_parser",
 ]
 autodoc_typehints = "description"
+autosummary_generate = True
 html_theme = "furo"

@@ -1,8 +1,7 @@
 # Reference
 
-## dynamicpet
-
 ```{eval-rst}
-.. automodule:: dynamicpet
-   :members:
+.. click:: dynamicpet.__main__:kineticmodel
+   :prog: kineticmodel
+   :nested: full
 ```

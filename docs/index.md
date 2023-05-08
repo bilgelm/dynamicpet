@@ -16,6 +16,7 @@ maxdepth: 1
 
 usage
 reference
+api
 contributing
 Code of Conduct <codeofconduct>
 License <license>
