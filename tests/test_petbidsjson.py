@@ -18,8 +18,8 @@ def test_get_frametiming_from_json_scanstart0() -> None:
         "TracerNuclide": "C11",
     }
     frame_start, frame_duration = get_frametiming(my_json_dict)
-    assert np.all(frame_start == np.array([120, 240, 360]))
-    assert np.all(frame_duration == np.array([120, 120, 120]))
+    assert np.all(frame_start == np.array([120, 240, 360]) / 60)
+    assert np.all(frame_duration == np.array([120, 120, 120]) / 60)
 
 
 def test_get_frametiming_from_invalid_jsons() -> None:
@@ -56,4 +56,4 @@ def test_halflife() -> None:
         "FrameDuration": [120, 120, 120],
         "TracerNuclide": "C11",
     }
-    assert get_radionuclide_halflife(my_json_dict) == 1224
+    assert get_radionuclide_halflife(my_json_dict) == 1224 / 60

@@ -9,6 +9,7 @@ from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
 from dynamicpet.temporalobject import TemporalImage
 from dynamicpet.temporalobject import TemporalMatrix
+from dynamicpet.typing_utils import NumpyRealNumberArray
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def frame_start() -> NDArray[np.double]:
 
 @pytest.fixture
 def frame_duration() -> NDArray[np.double]:
-    """Frame end times."""
+    """Frame durations."""
     return np.array([5, 5, 10, 10], dtype=np.double) * 60
 
 
@@ -72,7 +73,7 @@ def test_suvr_tm(reftac: TemporalMatrix, tacs: TemporalMatrix) -> None:
     """Test SUVR calculation using TemporalMatrix."""
     km = SUVR(reftac, tacs)
     km.fit()
-    suvr = km.get_parameter("suvr")
+    suvr: NumpyRealNumberArray = km.get_parameter("suvr")  # type: ignore
     assert suvr.shape == (2,)
     assert np.all(suvr == [2, 3])
 
@@ -89,6 +90,12 @@ def test_suvr_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
 def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
     """Test SRTM Zhou 2003 using TemporalImage."""
     km = SRTMZhou2003(reftac, tacs_img)
-    km.fit()
-    dvr_img = km.get_parameter("dvr")
-    assert dvr_img.shape == (1, 1, 2)
+    km.fit(integration_type="rect")
+    dvr_img1: SpatialImage = km.get_parameter("dvr")  # type: ignore
+
+    assert dvr_img1.shape == (1, 1, 2)
+
+    km.fit(integration_type="trapz")
+    dvr_img2: SpatialImage = km.get_parameter("dvr")  # type: ignore
+
+    assert np.allclose(dvr_img1.dataobj, dvr_img2.dataobj)

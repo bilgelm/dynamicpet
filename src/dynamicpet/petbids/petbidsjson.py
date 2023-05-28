@@ -65,15 +65,16 @@ def update_frametiming_from(
         updated json dictionary
     """
     new_json_dict: PetBidsJson = deepcopy(json_dict)
-    new_json_dict["FrameTimesStart"] = temporal_object.frame_start.tolist()
-    new_json_dict["FrameDuration"] = temporal_object.frame_duration.tolist()
+    # convert from minutes to seconds
+    new_json_dict["FrameTimesStart"] = (temporal_object.frame_start * 60).tolist()
+    new_json_dict["FrameDuration"] = (temporal_object.frame_duration * 60).tolist()
     return new_json_dict
 
 
 def get_frametiming(
     json_dict: PetBidsJson,
 ) -> Tuple[NDArray[np.double], NDArray[np.double]]:
-    """Get frame timing information from PET-BIDS json.
+    """Get frame timing information, in minutes, from PET-BIDS json.
 
     PET-BIDS json must be in the 2020 format with the following tags:
     FrameDuration: Time duration of each frame in seconds
@@ -92,8 +93,8 @@ def get_frametiming(
         json_dict: PET-BIDS json dictionary
 
     Returns:
-        frame_start: vector of frame start times relative to injection start
-        frame_end: vector of frame end times relative to injection start
+        frame_start: vector of frame start times relative to injection start, in minutes
+        frame_end: vector of frame end times relative to injection start, in minutes
 
     Raises:
         ValueError: invalid frame timing
@@ -117,13 +118,16 @@ def get_frametiming(
         # invalid PET BIDS json
         raise ValueError("Neither InjectionStart nor ScanStart is 0")
 
-    return frame_start, frame_duration
+    # convert seconds to minutes
+    return frame_start / 60, frame_duration / 60
 
 
 def get_radionuclide_halflife(json_dict: PetBidsJson) -> float:
     """Get halflife of radionuclide from PET BIDS JSON dictionary."""
     radionuclide = json_dict["TracerNuclide"].lower().replace("-", "")
-    return HALFLIVES[radionuclide]
+
+    # convert seconds to minutes
+    return HALFLIVES[radionuclide] / 60
 
 
 def read_json(jsonfilename: str | PathLike[str]) -> PetBidsJson:

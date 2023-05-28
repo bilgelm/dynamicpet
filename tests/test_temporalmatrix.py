@@ -228,6 +228,14 @@ def test_cumulative_integral(tm: TemporalMatrix) -> None:
     assert np.all(expected == res)
 
 
+def test_cumulative_integral_trapz(tm: TemporalMatrix) -> None:
+    """Test cumulative trapezoidal integral based on frame mid times."""
+    res = tm.cumulative_integral("trapz")
+    expected = np.array([0, 1500, 6000, 15000, 27000, 45000, 69000])
+    assert res.shape == (tm.num_elements, tm.num_frames)
+    assert np.all(expected == res)
+
+
 def test_cumulative_integral_broadcasting() -> None:
     """Test cumulative integral with potentially incorrect axis broadcasting."""
     dataobj: NDArray[np.double] = np.array([[0, 10], [0, 20]], dtype=np.double)

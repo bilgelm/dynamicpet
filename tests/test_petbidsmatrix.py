@@ -33,8 +33,8 @@ def pm() -> PETBIDSMatrix:
 
 def test_extract(pm: PETBIDSMatrix) -> None:
     """Test extracting couple frames in the middle."""
-    start_time = 10 * 60
-    end_time = 30 * 60
+    start_time = 10
+    end_time = 30
     extract_res = pm.extract(start_time, end_time)
 
     assert extract_res.num_frames == 2

@@ -11,6 +11,7 @@ from typing import Tuple
 from typing import TypeVar
 
 import numpy as np
+from scipy.integrate import cumulative_trapezoid  # type: ignore
 
 from ..typing_utils import NumpyRealNumberArray
 from ..typing_utils import RealNumber
@@ -19,6 +20,7 @@ from ..typing_utils import RealNumber
 T = TypeVar("T", bound="TemporalObject[Any]")
 
 WEIGHT_OPTS = Literal["frame_duration"]
+INTEGRATION_TYPE_OPTS = Literal["rect", "trapz"]
 
 
 class TimingError(ValueError):
@@ -288,28 +290,60 @@ class TemporalObject(Generic[T], ABC):
             raise ValueError("Weights should be None, frame_duration, or a numpy array")
         return delta
 
-    def cumulative_integral(self) -> NumpyRealNumberArray:
+    def cumulative_integral(
+        self, integration_type: INTEGRATION_TYPE_OPTS = "rect"
+    ) -> NumpyRealNumberArray:
         """Cumulative integration starting at t=0 and ending at frame_end.
 
+        Args:
+            integration_type: rect (rectangular) or trapz (trapezoidal).
+                Rectangular integration uses frame duration whereas trapezoidal
+                integration uses frame mid times.
+
         Returns:
-            cumulative integral
+            cumulative integral, with same shape as dataobj
 
         Raises:
-            NotImplementedError: there are time gaps
+            ValueError: invalid integration type
         """
         if self.has_gaps():
-            raise NotImplementedError(
-                "Cumulative integration has not been implemented for "
-                "TemporalObjects with time gaps between frames"
+            warnings.warn(
+                (
+                    "TemporalObject has time gaps between frames. "
+                    "Make sure that gaps do not mask important temporal dynamics."
+                ),
+                RuntimeWarning,
+                stacklevel=2,
             )
+            if integration_type == "rect":
+                warnings.warn(
+                    (
+                        "Rectangular integration is not available for "
+                        "TemporalObjects with time gaps between frames. "
+                        "Changing to trapezoidal integration."
+                    ),
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                integration_type = "trapz"
 
         # if start_time > 0, then we assume activity linearly increased from 0
         # to values attained in first frame
         initial = self.start_time * self.dataobj[..., 0] / 2
-        res: NumpyRealNumberArray = (
-            np.cumsum(self.dataobj * self.frame_duration, axis=-1)
-            + initial[..., np.newaxis]
-        )
+        res: NumpyRealNumberArray
+
+        if integration_type == "rect":
+            res = (
+                np.cumsum(self.dataobj * self.frame_duration, axis=-1)
+                + initial[..., np.newaxis]
+            )
+        elif integration_type == "trapz":
+            res = (
+                cumulative_trapezoid(self.dataobj, self.frame_mid, axis=-1, initial=0)
+                + initial[..., np.newaxis]
+            )
+        else:
+            raise ValueError("integration_type" + integration_type + "is invalid")
         return res
 
 

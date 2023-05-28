@@ -125,11 +125,11 @@ def test_num_frames(ti: PETBIDSImage, img: Nifti1Image) -> None:
 def test_start_time(ti: PETBIDSImage, json_dict: PetBidsJson) -> None:
     """Test start time."""
     if json_dict["InjectionStart"] == 0:
-        assert ti.start_time == json_dict["FrameTimesStart"][0]
+        assert ti.start_time == json_dict["FrameTimesStart"][0] / 60
     elif json_dict["ScanStart"] == 0:
         assert (
             ti.start_time
-            == json_dict["FrameTimesStart"][0] - json_dict["InjectionStart"]
+            == (json_dict["FrameTimesStart"][0] - json_dict["InjectionStart"]) / 60
         )
 
 
@@ -138,21 +138,24 @@ def test_end_time(ti: PETBIDSImage, json_dict: PetBidsJson) -> None:
     if json_dict["InjectionStart"] == 0:
         assert (
             ti.end_time
-            == json_dict["FrameTimesStart"][-1] + json_dict["FrameDuration"][-1]
+            == (json_dict["FrameTimesStart"][-1] + json_dict["FrameDuration"][-1]) / 60
         )
     elif json_dict["ScanStart"] == 0:
         assert (
             ti.end_time
-            == json_dict["FrameTimesStart"][-1]
-            + json_dict["FrameDuration"][-1]
-            - json_dict["InjectionStart"]
+            == (
+                json_dict["FrameTimesStart"][-1]
+                + json_dict["FrameDuration"][-1]
+                - json_dict["InjectionStart"]
+            )
+            / 60
         )
 
 
 def test_frame_duration(ti: PETBIDSImage, json_dict: PetBidsJson) -> None:
     """Test frame durations."""
     for i, duration in enumerate(json_dict["FrameDuration"]):
-        assert ti.frame_duration[i] == duration
+        assert ti.frame_duration[i] == duration / 60
 
 
 def test_extract_time_identity(ti: PETBIDSImage) -> None:
@@ -211,8 +214,8 @@ def test_extract_time_middle_fuzzy(ti: PETBIDSImage) -> None:
     frame_start = ti.frame_start
     frame_end = ti.frame_end
 
-    start_time = frame_start[1] + 6
-    end_time = frame_end[-2] - 6
+    start_time = frame_start[1] + 0.1
+    end_time = frame_end[-2] - 0.1
     extr = ti.extract(start_time, end_time)
 
     assert extr.num_frames == ti.num_frames - 4

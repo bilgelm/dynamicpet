@@ -163,7 +163,35 @@ class TemporalImage(TemporalObject["TemporalImage"]):
 
         return concat_res
 
-    def timeseries_in_mask(self, mask: SpatialImage) -> TemporalMatrix:
+    def timeseries_in_mask(
+        self, mask: NumpyRealNumberArray | None = None
+    ) -> TemporalMatrix:
+        """Get the time activity curves (TAC) (within a region of interest).
+
+        Args:
+            mask: 3D binary mask
+
+        Returns:
+            time series (in mask if provided, otherwise in entire image)
+
+        Raises:
+            ValueError: binary mask is incompatible
+        """
+        if mask is None:
+            dataobj = self.dataobj.reshape((self.num_elements, self.num_frames))
+        elif mask.shape == self.dataobj.shape[:-1]:
+            dataobj = self.dataobj[mask.astype("bool"), :]
+        else:
+            raise ValueError("Binary mask is incompatible with data")
+
+        tacs = TemporalMatrix(
+            dataobj,
+            self.frame_start,
+            self.frame_duration,
+        )
+        return tacs
+
+    def mean_timeseries_in_mask(self, mask: SpatialImage) -> TemporalMatrix:
         """Get mean time activity curve (TAC) within a region of interest.
 
         Args:
@@ -172,9 +200,9 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         Returns:
             mean time series in mask
         """
-        tacs = TemporalMatrix(
+        mean_tac = TemporalMatrix(
             self.dataobj[mask.get_fdata().astype("bool"), :].mean(axis=0),
             self.frame_start,
             self.frame_duration,
         )
-        return tacs
+        return mean_tac

@@ -1,10 +1,11 @@
 """Calculate standardized update value ratio (SUVR)."""
 
-from typing import Any
+from typing import List
 
 import numpy as np
 
-from dynamicpet.temporalobject.temporalobject import TemporalObject
+from dynamicpet.temporalobject.temporalimage import TemporalImage
+from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
 
 from ..typing_utils import NumpyRealNumber
 from ..typing_utils import NumpyRealNumberArray
@@ -22,8 +23,19 @@ class SUVR(KineticModel):
     over which you wish to calculate SUVR.
     """
 
-    def fit(self) -> None:
+    @classmethod
+    def get_param_names(cls) -> List[str]:
+        """Get names of kinetic model parameters."""
+        return ["suvr"]
+
+    def fit(self, mask: NumpyRealNumberArray | None = None) -> None:
         """Calculate SUVR.
+
+        Args:
+            mask: an optional parameter used only when tacs attribute is a
+                  TemporalImage (or inherits from TemporalImage). A 3-D binary
+                  mask that defines where to fit the kinetic model. Voxels
+                  outside the mask will be set to NA in output parametric images.
 
         Example:
             >>> import numpy as np
@@ -42,17 +54,19 @@ class SUVR(KineticModel):
             >>> km.get_parameter('suvr')
             array([1.5, 3. ])
         """
+        tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
+
         numerator: NumpyRealNumberArray = np.sum(
-            self.tacs.dataobj * self.tacs.frame_duration, axis=-1
+            tacs.dataobj * tacs.frame_duration, axis=-1
         )
         denominator: NumpyRealNumber = np.sum(
             self.reftac.dataobj * self.reftac.frame_duration
         )
         suvr = numerator / denominator
 
-        self.parameters["suvr"] = suvr
+        self.set_parameter("suvr", suvr, mask)
 
-    def fitted_tacs(self) -> TemporalObject[Any]:
+    def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""
         # there is no parametric model for SUVR, so we just return the tacs
         return self.tacs

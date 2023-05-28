@@ -2,35 +2,39 @@
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Any
 from typing import Dict
+from typing import List
 
 import numpy as np
 from nibabel.spatialimages import SpatialImage
 
-from ..petbids.petbidsmatrix import PETBIDSMatrix
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..temporalobject.temporalobject import TemporalObject
 from ..typing_utils import NumpyRealNumberArray
 
 
 # rename to ReferenceTissueKineticModel ??
 class KineticModel(ABC):
-    """KineticModel abstract based class.
+    """KineticModel abstract base class.
 
     Attributes:
-        reftac: reference time activity curve (TAC)
-        tacs: TACs in regions/voxels of interest
+        reftac: reference time activity curve (TAC), with times specified in minutes
+        tacs: TACs in regions/voxels of interest, with times specified in minutes
         parameters: kinetic model parameters
     """
 
-    reftac: TemporalMatrix | PETBIDSMatrix
-    tacs: TemporalObject[Any]
+    reftac: TemporalMatrix
+    tacs: TemporalMatrix | TemporalImage
     parameters: Dict[str, NumpyRealNumberArray]
 
+    @classmethod
+    @abstractmethod
+    def get_param_names(cls) -> List[str]:
+        """Get names of kinetic model parameters."""
+        raise NotImplementedError
+
     def __init__(
-        self, reftac: TemporalMatrix | PETBIDSMatrix, tacs: TemporalObject[Any]
+        self, reftac: TemporalMatrix, tacs: TemporalMatrix | TemporalImage
     ) -> None:
         """Initialize a kinetic model.
 
@@ -57,14 +61,14 @@ class KineticModel(ABC):
         if not np.all(tacs.frame_duration == reftac.frame_duration):
             raise ValueError("reftac and tacs should have same frame ends")
 
-        self.reftac: TemporalMatrix | PETBIDSMatrix = reftac
-        self.tacs: TemporalObject[Any] = tacs
+        self.reftac: TemporalMatrix = reftac
+        self.tacs: TemporalMatrix | TemporalImage = tacs
         self.parameters: Dict[str, NumpyRealNumberArray] = {}
 
     @abstractmethod
     def fit(self) -> None:
         """Estimate model parameters."""
-        # implementation should update self.results
+        # implementation should update self.parameters
         pass
 
     def get_parameter(self, param_name: str) -> SpatialImage | NumpyRealNumberArray:
@@ -88,10 +92,7 @@ class KineticModel(ABC):
             # if tacs is an image and number of parameter estimates is equal
             # to the number of image voxels, then return parameter as an image;
             # otherwise, return as a matrix
-            if (
-                isinstance(self.tacs, TemporalImage)
-                and self.tacs.num_voxels == self.parameters[param_name].size
-            ):
+            if isinstance(self.tacs, TemporalImage):
                 image_maker = self.tacs.img.__class__
                 param_img: SpatialImage = image_maker(
                     self.parameters[param_name],
@@ -112,3 +113,33 @@ class KineticModel(ABC):
             raise AttributeError(
                 "No estimate available for parameter " f"{param_name}."
             )
+
+    def set_parameter(
+        self,
+        param_name: str,
+        param: NumpyRealNumberArray,
+        mask: NumpyRealNumberArray | None = None,
+    ) -> None:
+        """Set kinetic model parameter.
+
+        Args:
+            param_name: name of parameter to set
+            param: parameter estimate
+            mask: an optional parameter. A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  the kinetic model was fitted. Elements outside the mask will
+                  be set to to NA in output parametric images.
+        """
+        # if param_name not in self.__class__.get_param_names():
+        #     raise ValueError("No such parameter defined for kinetic model")
+        if mask is None:
+            if hasattr(param, "size") and param.size == self.tacs.num_elements:
+                self.parameters[param_name] = np.reshape(
+                    param, self.tacs.dataobj.shape[:-1]
+                )
+            else:
+                self.parameters[param_name] = param
+        else:
+            tmp = np.empty_like(self.tacs.dataobj)
+            tmp[mask.astype("bool")] = param
+            self.parameters[param_name] = tmp

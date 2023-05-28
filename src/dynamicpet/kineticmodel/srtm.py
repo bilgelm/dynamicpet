@@ -1,64 +1,166 @@
 """Kinetic modeling for dynamic PET using SRTM by Zhou et al. (2003)."""
 
-from typing import Any
+from typing import List
+from typing import Tuple
 
 import numpy as np
+from nibabel.processing import smooth_image
+from nibabel.spatialimages import SpatialImage
 from numpy.linalg import LinAlgError
 from numpy.linalg import solve
+from scipy.optimize import curve_fit  # type: ignore
+from scipy.signal import convolve  # type: ignore
 
+from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
+from ..temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
 from ..temporalobject.temporalobject import WEIGHT_OPTS
-from ..temporalobject.temporalobject import TemporalObject
 from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import RealNumber
 from .kineticmodel import KineticModel
+
+
+class SRTMLammertsma1996(KineticModel):
+    """Simplified reference tissue model (SRTM).
+
+    Reference:
+    Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor
+    studies. NeuroImage. 1996 Dec;4(3 Pt 1):153-8.
+    """
+
+    @classmethod
+    def get_param_names(cls) -> List[str]:
+        """Get names of kinetic model parameters."""
+        return ["bp", "r1", "k2"]
+
+    def fit(
+        self,
+        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        mask: NumpyRealNumberArray | None = None,
+    ) -> None:
+        """Estimate model parameters."""
+        tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
+        num_elements = tacs.num_elements
+        roitacs = tacs.dataobj.reshape(num_elements, tacs.num_frames)
+
+        weights = tacs.get_weights(weight_by)
+
+        bp = np.zeros((num_elements, 1))
+        r1 = np.zeros((num_elements, 1))
+        k2 = np.zeros((num_elements, 1))
+        for i in range(num_elements):
+            init_guess = (1.5, 1.0, 0.1)
+            popt, _ = curve_fit(
+                srtm_model,
+                self.reftac,
+                roitacs[i, :].flatten(),
+                init_guess,
+                sigma=weights,
+                bounds=([0, 0, 0], [15, 10, 1]),
+            )
+            bp[i], r1[i], k2[i] = popt
+
+        self.set_parameter("bp", bp, mask)
+        self.set_parameter("r1", r1, mask)
+        self.set_parameter("k2", k2, mask)
+
+
+def srtm_model(
+    reftac: TemporalMatrix, bp: float, r1: float, k2: float
+) -> NumpyRealNumberArray:
+    """SRTM model for a target TAC."""
+    # because reftac frames are not necessarily evenly spaced,
+    # we cannot use convolve. To resolve this issue, we first upsample
+    # to a higher frequency uniform timing grid, convolve, and then
+    # downsample to original timing grid
+
+    t = reftac.frame_mid
+    # find smallest time interval in data
+    # step = np.min(reftac.frame_duration)
+    # t_upsampled = np.arange(t[0], t[-1], step)
+    # if t_upsampled[-1] < t[-1]:
+    #     t_upsampled = np.append(t_upsampled, t_upsampled[-1] + step)
+    t_upsampled, step = np.linspace(np.min(t), np.max(t), 1024, retstep=True)
+
+    reftac_upsampled = np.interp(t_upsampled, t, reftac.dataobj.flatten())
+
+    k2a = k2 / (1 + bp)
+    conv_res_upsampled = (
+        convolve(reftac_upsampled, np.exp(-k2a * t_upsampled), mode="full")[
+            : len(t_upsampled)
+        ]
+        * step
+    )
+    tac_upsampled = r1 * reftac_upsampled + (k2 - r1 * k2a) * conv_res_upsampled
+    tac = np.interp(t, t_upsampled, tac_upsampled)
+
+    return tac
 
 
 class SRTMZhou2003(KineticModel):
     """Simplified reference tissue model (SRTM) with linear spatial constraint.
 
-    Attributes:
-        weights: vector of weights with num_frames elements
+    Reference:
+    Zhou Y, Endres CJ, Brašić JR, Huang S-C, Wong DF.
+    Linear regression with spatial constraint to generate parametric images of
+    ligand-receptor dynamic PET studies with a simplified reference tissue model.
+    Neuroimage. 2003;18:975-989.
     """
 
-    weights: NumpyRealNumberArray
+    @classmethod
+    def get_param_names(cls) -> List[str]:
+        """Get names of kinetic model parameters."""
+        return ["dvr", "r1", "k2", "k2a", "noise_var_eq_dvr", "noise_var_eq_r1"]
 
-    def __init__(
+    def fit(  # noqa: max-complexity: 12
         self,
-        reftac: TemporalMatrix,
-        tacs: TemporalObject[Any],
+        integration_type: INTEGRATION_TYPE_OPTS = "rect",
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = "frame_duration",
+        mask: NumpyRealNumberArray | None = None,
+        fwhm: RealNumber | List[RealNumber] | None = None,
     ) -> None:
-        """Initialize a SRTM-LRSC kinetic model.
+        """Estimate model parameters.
 
         Args:
-            reftac: reference time activity curve (TAC), must have single element
-            tacs: TACs in regions/voxels of interest, with num_frames equal to
-                  that of reftac
-            weight_by: If weight_by == None, each frame is weighted equally.
-                       If weight_by == 'frame_duration', each frame is weighted
-                       proportionally to its duration (inverse variance weighting).
-                       If weight_by is a 1-D array, then specified values are used.
+            integration_type: If 'rect', rectangular integration is used for TACs.
+                              If 'trapz', trapezoidal integration is used based
+                              on middle timepoint of each frame.
+            weight_by: If None, each frame is weighted equally.
+                       If 'frame_duration', each frame is weighted proportionally
+                       to its duration (inverse variance weighting).
+                       If a 1-D array, then specified values are used.
+            mask: an optional parameter used only when tacs attribute is a
+                  TemporalImage (or inherits from TemporalImage). A 3-D binary
+                  mask that defines where to fit the kinetic model. Voxels
+                  outside the mask will be set to NA in output parametric images
+            fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
         """
-        super().__init__(reftac, tacs)
-
-        self.weights: NumpyRealNumberArray = tacs.get_weights(weight_by)
-
-    def fit(self) -> None:
-        """Estimate model parameters."""
         # get reference TAC as a 1-D vector
-        reftac = self.reftac.dataobj.flatten()[:, np.newaxis]
+        reftac: NumpyRealNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
         # numerical integration of reference TAC
-        int_reftac = self.reftac.cumulative_integral().flatten()
+        int_reftac: NumpyRealNumberArray = self.reftac.cumulative_integral(
+            integration_type
+        ).flatten()
 
-        w = np.diag(self.weights)
-
-        n = self.tacs.num_frames
+        tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
+        n = tacs.num_frames
         m = 3
+        num_elements = tacs.num_elements
+        tacs_mat: NumpyRealNumberArray = tacs.dataobj
+        int_tacs_mat: NumpyRealNumberArray = tacs.cumulative_integral(integration_type)
 
-        num_elements = self.tacs.num_elements
-        tacs_mat = np.reshape(self.tacs.dataobj, (num_elements, n))
-        int_tacs = self.tacs.cumulative_integral()
-        int_tacs_mat = np.reshape(int_tacs, (num_elements, n))
+        weights = tacs.get_weights(weight_by)
+        w = np.diag(weights)
+
+        # Per the recommendation in 1st paragraph on p. 979 of Zhou et al.,
+        # smoothed TAC is used in the design matrix if an image + FWHM is provided.
+        do_smooth = isinstance(self.tacs, TemporalImage) and fwhm is not None
+        if do_smooth:
+            smooth_img: SpatialImage = smooth_image(self.tacs.img, fwhm)  # type: ignore
+            if mask is None:
+                tacs_mat = np.reshape(smooth_img.get_fdata(), (num_elements, n))
+            else:
+                tacs_mat = smooth_img.get_fdata()[mask.astype("bool"), :]
 
         dvr = np.zeros((num_elements, 1))
         noise_var_eq_dvr = np.zeros((num_elements, 1))
@@ -73,10 +175,10 @@ class SRTMZhou2003(KineticModel):
             int_tac = int_tacs_mat[k, :][:, np.newaxis]
 
             # ----- Get DVR -----
-            # Set up the weighted linear regression model
-            # based on Eq. 9 in Zhou et al.
+            # Set up the weighted linear regression model based on Eq. 9 in Zhou et al.
             # Per the recommendation in 1st paragraph on p. 979 of Zhou et al.,
-            # smoothed TAC is used in the design matrix, if provided.
+            # smoothed TAC is used in the design matrix if an image +
+            # a smoothing FWHM is provided.
             x = np.column_stack((int_reftac, reftac, -tac))
 
             b: NumpyRealNumberArray
@@ -107,13 +209,137 @@ class SRTMZhou2003(KineticModel):
 
             r1[k], k2[k], k2a[k] = b
 
-        self.parameters["dvr"] = np.reshape(dvr, self.tacs.shape[:-1])
-        self.parameters["r1"] = np.reshape(r1, self.tacs.shape[:-1])
-        self.parameters["k2"] = np.reshape(k2, self.tacs.shape[:-1])
-        self.parameters["k2a"] = np.reshape(k2a, self.tacs.shape[:-1])
-        self.parameters["noise_var_eq_dvr"] = np.reshape(
-            noise_var_eq_dvr, self.tacs.shape[:-1]
+        self.set_parameter("dvr", dvr, mask)
+        self.set_parameter("r1", r1, mask)
+        self.set_parameter("k2", k2, mask)
+        self.set_parameter("k2a", k2a, mask)
+        self.set_parameter("noise_var_eq_dvr", noise_var_eq_dvr, mask)
+        self.set_parameter("noise_var_eq_r1", noise_var_eq_r1, mask)
+
+        if do_smooth:
+            smooth_r1_mat, smooth_k2_mat, smooth_k2a_mat, h = self.prep_refine_r1(
+                mask, fwhm
+            )
+
+            r1_lrsc = np.zeros((num_elements, 1))
+            k2_lrsc = np.zeros((num_elements, 1))
+            k2a_lrsc = np.zeros((num_elements, 1))
+
+            for k in range(num_elements):
+                # get TAC and its cumulative integral as 1-D vectors
+                tac = tacs_mat[k, :][:, np.newaxis]
+                int_tac = int_tacs_mat[k, :][:, np.newaxis]
+
+                # ----- Get R1 incorporating spatial constraint -----
+                # Set up the ridge regression model
+                # based on Eq. 11 in Zhou et al.
+                x = np.column_stack((reftac, int_reftac, -int_tac))
+                h_d = np.diag(h[k, :])
+                b_sc = np.array([smooth_r1_mat[k], smooth_k2_mat[k], smooth_k2a_mat[k]])
+                try:
+                    b = solve(x.T @ w @ x + h_d, x.T @ w @ tac + h_d @ b_sc)
+                except LinAlgError:
+                    b = np.zeros((3, 1))
+
+                r1_lrsc[k], k2_lrsc[k], k2a_lrsc[k] = b
+
+            self.set_parameter("r1_lrsc", r1_lrsc, mask)
+            self.set_parameter("k2_lrsc", k2_lrsc, mask)
+            self.set_parameter("k2a_lrsc", k2a_lrsc, mask)
+
+    def prep_refine_r1(
+        self,
+        mask: NumpyRealNumberArray | None = None,
+        fwhm: RealNumber | List[RealNumber] | None = None,
+    ) -> Tuple[NumpyRealNumberArray, ...]:
+        """Refine R1.
+
+        Args:
+            mask: an optional parameter used only when tacs attribute is a
+                  TemporalImage (or inherits from TemporalImage). A 3-D binary
+                  mask that defines where to fit the kinetic model. Voxels
+                  outside the mask will be set to NA in output parametric images
+            fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
+
+        Returns:
+            smooth_r1_mat: flattened matrix (according to mask) of smoothed r1
+            smooth_k2_mat: flattened matrix (according to mask) of smoothed k2
+            smooth_k2a_mat: flattened matrix (according to mask) of smoothed k2a
+            h: matrix as described in Zhou et al.
+        """
+        m = 3
+
+        smooth_r1_img: SpatialImage = smooth_image(
+            self.get_parameter("r1"), fwhm  # type: ignore
         )
-        self.parameters["noise_var_eq_r1"] = np.reshape(
-            noise_var_eq_r1, self.tacs.shape[:-1]
+        smooth_k2_img: SpatialImage = smooth_image(
+            self.get_parameter("k2"), fwhm  # type: ignore
         )
+        smooth_k2a_img: SpatialImage = smooth_image(
+            self.get_parameter("k2a"), fwhm  # type: ignore
+        )
+
+        noise_var_eq_r1_img: SpatialImage = self.get_parameter("noise_var_eq_r1")  # type: ignore
+        r1_img: SpatialImage = self.get_parameter("r1")  # type: ignore
+        k2_img: SpatialImage = self.get_parameter("k2")  # type: ignore
+        k2a_img: SpatialImage = self.get_parameter("k2a")  # type: ignore
+        noise_var_eq_r1_data = noise_var_eq_r1_img.get_fdata()
+        h0 = (
+            m
+            * noise_var_eq_r1_data
+            / np.square(r1_img.get_fdata() - smooth_r1_img.get_fdata())
+        )
+        h1 = (
+            m
+            * noise_var_eq_r1_data
+            / np.square(k2_img.get_fdata() - smooth_k2_img.get_fdata())
+        )
+        h2 = (
+            m
+            * noise_var_eq_r1_data
+            / np.square(k2a_img.get_fdata() - smooth_k2a_img.get_fdata())
+        )
+
+        h0_img = image_maker(h0, smooth_r1_img)
+        h1_img = image_maker(h1, smooth_k2_img)
+        h2_img = image_maker(h2, smooth_k2a_img)
+
+        smooth_r1_mat: NumpyRealNumberArray
+        smooth_k2_mat: NumpyRealNumberArray
+        smooth_k2a_mat: NumpyRealNumberArray
+        if mask is None:
+            smooth_r1_mat = smooth_r1_img.get_fdata().flatten()
+            smooth_k2_mat = smooth_k2_img.get_fdata().flatten()
+            smooth_k2a_mat = smooth_k2a_img.get_fdata().flatten()
+
+            num_elements = smooth_r1_mat.size
+            h = np.zeros((num_elements, m))
+            h[:, 0] = smooth_image(h0_img, fwhm).get_fdata().flatten()  # type: ignore
+            h[:, 1] = smooth_image(h1_img, fwhm).get_fdata().flatten()  # type: ignore
+            h[:, 2] = smooth_image(h2_img, fwhm).get_fdata().flatten()  # type: ignore
+        else:
+            smooth_r1_mat = smooth_r1_img.get_fdata()[mask.astype("bool")]
+            smooth_k2_mat = smooth_k2_img.get_fdata()[mask.astype("bool")]
+            smooth_k2a_mat = smooth_k2a_img.get_fdata()[mask.astype("bool")]
+
+            num_elements = mask.astype("bool").sum()
+            h = np.zeros((num_elements, m))
+            h[:, 0] = smooth_image(h0_img, fwhm).get_fdata()[mask.astype("bool")]  # type: ignore
+            h[:, 1] = smooth_image(h1_img, fwhm).get_fdata()[mask.astype("bool")]  # type: ignore
+            h[:, 2] = smooth_image(h2_img, fwhm).get_fdata()[mask.astype("bool")]  # type: ignore
+
+        return smooth_r1_mat, smooth_k2_mat, smooth_k2a_mat, h
+
+
+def image_maker(x: NumpyRealNumberArray, img: SpatialImage) -> SpatialImage:
+    """Make image from dataobj.
+
+    Args:
+        x: data object
+        img: image whose class, affine, and header will be used to
+                make x into an image
+
+    Returns:
+        created image
+    """
+    return img.__class__(x, img.affine, img.header)

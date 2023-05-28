@@ -53,7 +53,7 @@ def suvr(
     # extract average reference region TAC
     refmask_img: SpatialImage = nib_load(refmask)  # type: ignore
     # refmask_img = SpatialImage.from_filename(refmask)
-    reftac = pet_img.timeseries_in_mask(refmask_img)
+    reftac = pet_img.mean_timeseries_in_mask(refmask_img)
 
     # compute SUVR
     model = SUVR(reftac, pet_img)

@@ -136,3 +136,31 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         )
 
         return concat_res
+
+    def timeseries_in_mask(
+        self, mask: NumpyRealNumberArray | None = None
+    ) -> "TemporalMatrix":
+        """Get timeseries (within a region of interest).
+
+        Args:
+            mask: binary mask
+
+        Returns:
+            time series (in mask if provided, otherwise in entire image)
+
+        Raises:
+            ValueError: binary mask is incompatible
+        """
+        if mask is None:
+            dataobj = self.dataobj.reshape((self.num_elements, self.num_frames))
+        elif mask.shape == self.dataobj.shape[:-1]:
+            dataobj = self.dataobj[mask.astype("bool"), :]
+        else:
+            raise ValueError("Binary mask is incompatible with data")
+
+        tacs = TemporalMatrix(
+            dataobj,
+            self.frame_start,
+            self.frame_duration,
+        )
+        return tacs
