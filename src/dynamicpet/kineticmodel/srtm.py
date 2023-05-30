@@ -110,7 +110,10 @@ class SRTMZhou2003(KineticModel):
     @classmethod
     def get_param_names(cls) -> List[str]:
         """Get names of kinetic model parameters."""
-        return ["dvr", "r1", "k2", "k2a", "noise_var_eq_dvr", "noise_var_eq_r1"]
+        return ["dvr",
+                "r1", "k2", "k2a",
+                "r1_lrsc", "k2_lrsc", "k2a_lrsc",
+                "noise_var_eq_dvr", "noise_var_eq_r1"]
 
     def fit(  # noqa: max-complexity: 12
         self,
