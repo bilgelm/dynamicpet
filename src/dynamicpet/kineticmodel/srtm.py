@@ -110,10 +110,17 @@ class SRTMZhou2003(KineticModel):
     @classmethod
     def get_param_names(cls) -> List[str]:
         """Get names of kinetic model parameters."""
-        return ["dvr",
-                "r1", "k2", "k2a",
-                "r1_lrsc", "k2_lrsc", "k2a_lrsc",
-                "noise_var_eq_dvr", "noise_var_eq_r1"]
+        return [
+            "dvr",
+            "r1",
+            "k2",
+            "k2a",
+            "r1_lrsc",
+            "k2_lrsc",
+            "k2a_lrsc",
+            "noise_var_eq_dvr",
+            "noise_var_eq_r1",
+        ]
 
     def fit(  # noqa: max-complexity: 12
         self,
@@ -238,7 +245,9 @@ class SRTMZhou2003(KineticModel):
                 # based on Eq. 11 in Zhou et al.
                 x = np.column_stack((reftac, int_reftac, -int_tac))
                 h_d = np.diag(h[k, :])
-                b_sc = np.array([smooth_r1_mat[k], smooth_k2_mat[k], smooth_k2a_mat[k]])
+                b_sc = np.row_stack(
+                    (smooth_r1_mat[k], smooth_k2_mat[k], smooth_k2a_mat[k])
+                )
                 try:
                     b = solve(x.T @ w @ x + h_d, x.T @ w @ tac + h_d @ b_sc)
                 except LinAlgError:

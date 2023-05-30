@@ -2,19 +2,20 @@
 from abc import ABC
 from typing import List
 from typing import Union
-import numpy as np
 
-from rpy2.robjects import numpy2ri  # type: ignore
+import numpy as np
+from rpy2.robjects import default_converter  # type: ignore
+from rpy2.robjects import numpy2ri
 from rpy2.robjects import r
-from rpy2.robjects import default_converter
 from rpy2.robjects.packages import importr  # type: ignore
 
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..typing_utils import NumpyRealNumberArray
 from .kineticmodel import KineticModel
 
+
 np_cv_rules = default_converter + numpy2ri.converter
-kinfitr = importr('kinfitr')
+kinfitr = importr("kinfitr")
 
 
 class KinfitrModel(KineticModel, ABC):
@@ -48,18 +49,27 @@ class KinfitrModel(KineticModel, ABC):
         with np_cv_rules.context():
             for i in range(num_elements):
                 kinfitr_fun = r[self.__class__.get_r_name()]
-                if self.__class__.__name__ in ['MRTM1', 'MRTM2', 'RefLogan',
-                                               'RefMLLogan', 'RefPatlak']:
+                if self.__class__.__name__ in [
+                    "MRTM1",
+                    "MRTM2",
+                    "RefLogan",
+                    "RefMLLogan",
+                    "RefPatlak",
+                ]:
                     # need to read more to understand kinfitr implementation here
-                    res = kinfitr_fun(t_tac, reftac, roitacs[i, :].flatten(),
-                                      dur=frame_duration,
-                                      **kwargs)
+                    res = kinfitr_fun(
+                        t_tac,
+                        reftac,
+                        roitacs[i, :].flatten(),
+                        dur=frame_duration,
+                        **kwargs
+                    )
                 else:
                     res = kinfitr_fun(t_tac, reftac, roitacs[i, :].flatten(), **kwargs)
-                for param_name in res['par'].dtype.names:
+                for param_name in res["par"].dtype.names:
                     if param_name not in param_estimates:
                         param_estimates[param_name] = np.zeros((num_elements, 1))
-                    param_estimates[param_name][i] = res['par'][param_name]
+                    param_estimates[param_name][i] = res["par"][param_name]
 
         for param_name, param_estimate in param_estimates.items():
             self.set_parameter(param_name, param_estimate, mask)
@@ -67,6 +77,7 @@ class KinfitrModel(KineticModel, ABC):
 
 class FRTM(KinfitrModel):
     """kinfitr frtm wrapper."""
+
     @classmethod
     def get_param_names(cls) -> List[str]:
         """Get names of kinetic model parameters."""
@@ -75,11 +86,13 @@ class FRTM(KinfitrModel):
 
 class SRTM(KinfitrModel):
     """kinfitr srtm wrapper."""
+
     pass
 
 
 class SRTM2(KinfitrModel):
     """kinfitr srtm2 wrapper."""
+
     @classmethod
     def get_param_names(cls) -> List[str]:
         """Get names of kinetic model parameters."""
@@ -88,6 +101,7 @@ class SRTM2(KinfitrModel):
 
 class MRTM1(KinfitrModel):
     """kinfitr mrtm1 wrapper."""
+
     @classmethod
     def get_param_names(cls) -> List[str]:
         """Get names of kinetic model parameters."""
@@ -96,15 +110,17 @@ class MRTM1(KinfitrModel):
 
 class MRTM2(KinfitrModel):
     """kinfitr mrtm2 wrapper."""
+
     pass
 
 
 class RefLogan(KinfitrModel):
     """kinfitr refLogan wrapper."""  # DOESNT WORK, rpy2 error
+
     @classmethod
     def get_r_name(cls) -> str:
         """Get the R function name."""
-        return 'refLogan'
+        return "refLogan"
 
     @classmethod
     def get_param_names(cls) -> List[str]:
@@ -114,9 +130,11 @@ class RefLogan(KinfitrModel):
 
 class RefMLLogan(KinfitrModel):
     """kinfitr refmlLogan wrapper."""  # NOT IMPLEMENTED
+
     pass
 
 
 class RefPatlak(KinfitrModel):
     """kinfitr refPatlak wrapper."""  # NOT IMPLEMENTED
+
     pass

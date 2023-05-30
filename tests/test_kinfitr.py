@@ -1,8 +1,8 @@
 """Test cases for the kinfitr wrapper using data provided in kinfitr."""
 from collections import namedtuple
+
 import numpy as np
 import pytest
-
 from rpy2.robjects.packages import data as rdata  # type: ignore
 from rpy2.robjects.packages import importr
 
@@ -11,14 +11,15 @@ from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.temporalobject import TemporalMatrix
 
-TACPair = namedtuple('TACPair', ['reftac', 'tacs'])
+
+TACPair = namedtuple("TACPair", ["reftac", "tacs"])
 
 
 @pytest.fixture
 def simref0() -> TACPair:
     """Get data for first subject in kinfitr's simref dataset."""
-    kinfitr = importr('kinfitr')
-    simref = rdata(kinfitr).fetch('simref')['simref']
+    kinfitr = importr("kinfitr")
+    simref = rdata(kinfitr).fetch("simref")["simref"]
     # get data for participant at index i
     i = 0
     simref_i = np.array(simref[3][i])
@@ -40,8 +41,11 @@ def simref0() -> TACPair:
     # drop first frame (which has 0 duration, so creates TemporalMatrix problems)
     # this should not affect kinfitr functions as they will add the 0 back
     reftac_tm = TemporalMatrix(reftac[1:], frame_start[1:], frame_duration[1:])
-    tac_tm = TemporalMatrix(np.row_stack((tac1[1:], tac2[1:], tac3[1:])),
-                            frame_start[1:], frame_duration[1:])
+    tac_tm = TemporalMatrix(
+        np.row_stack((tac1[1:], tac2[1:], tac3[1:])),
+        frame_start[1:],
+        frame_duration[1:],
+    )
 
     return TACPair(reftac_tm, tac_tm)
 
@@ -91,7 +95,7 @@ def test_kinfitr_mrtm1(simref0: TACPair) -> None:
 def test_kinfitr_mrtm2(simref0: TACPair) -> None:
     """Test kinfitr MRTM2 wrapper."""
     km = kinfitr.MRTM2(simref0.reftac, simref0.tacs)
-    km.fit(k2prime=.1, frameStartEnd=np.array([1, 20]))
+    km.fit(k2prime=0.1, frameStartEnd=np.array([1, 20]))
 
     # check that the results match those provided in kinfitr documentation
     bp: float = km.get_parameter("bp")[0]  # type: ignore
@@ -133,7 +137,7 @@ def test_srtm_zhou2003(simref0: TACPair) -> None:
 def test_srtm_zhou2003_trapz(simref0: TACPair) -> None:
     """Test SRTM Zhou 2003."""
     km = SRTMZhou2003(simref0.reftac, simref0.tacs)
-    km.fit(integration_type='trapz')
+    km.fit(integration_type="trapz")
 
     # check that the results match those provided in kinfitr documentation
     bp: float = km.get_parameter("bp")[0]  # type: ignore

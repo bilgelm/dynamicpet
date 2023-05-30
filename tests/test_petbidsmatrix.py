@@ -25,7 +25,7 @@ def pm() -> PETBIDSMatrix:
         "FrameDuration": frame_duration.tolist(),
         "InjectionStart": 0,
         "ScanStart": 0,
-        "TracerNuclide": "C11",
+        "TracerRadionuclide": "C11",
     }
 
     return PETBIDSMatrix(dataobj, json_dict)

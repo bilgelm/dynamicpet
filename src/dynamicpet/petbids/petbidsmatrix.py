@@ -63,7 +63,10 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         Raises:
             ValueError: PETBIDSMatrices are from different radionuclides
         """
-        if self.json_dict["TracerNuclide"] != other.json_dict["TracerNuclide"]:
+        if (
+            self.json_dict["TracerRadionuclide"]
+            != other.json_dict["TracerRadionuclide"]
+        ):
             raise ValueError("Cannot concatenate data from different radionuclides")
 
         concat_mat = super().concatenate(other)

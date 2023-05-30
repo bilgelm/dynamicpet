@@ -96,6 +96,7 @@ def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> No
     assert dvr_img1.shape == (1, 1, 2)
 
     km.fit(integration_type="trapz")
-    dvr_img2: SpatialImage = km.get_parameter("dvr")  # type: ignore
+    dvr_img2: SpatialImage = km.get_parameter("bp")  # type: ignore
+    # dvr_img2_dataobj: NumpyRealNumberArray = dvr_img2.get_fdata()
 
-    assert np.allclose(dvr_img1.dataobj, dvr_img2.dataobj)
+    assert np.allclose(dvr_img1.get_fdata(), dvr_img2.get_fdata() + 1)

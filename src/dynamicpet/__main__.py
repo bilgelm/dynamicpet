@@ -1,13 +1,15 @@
 """Command-line interface."""
-import click
 import os
+
+import click
 from nibabel.filename_parser import splitext_addext
 from nibabel.loadsave import load as nib_load
 from nibabel.spatialimages import SpatialImage
 
+from dynamicpet.denoise import hypr
 from dynamicpet.kineticmodel.suvr import SUVR
 from dynamicpet.petbids import load as petbids_load
-from dynamicpet.denoise import hypr
+from dynamicpet.typing_utils import NumpyRealNumberArray
 
 
 @click.group()
@@ -28,12 +30,7 @@ def denoise() -> None:
     ),
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
-def hypr_lr(
-    pet: str,
-    fwhm: float,
-    output: str | None,
-    json: str | None
-) -> None:
+def hypr_lr(pet: str, fwhm: float, output: str | None, json: str | None) -> None:
     """Perform HYPR-LR denoising.
 
     PET: 3-D or 4-D PET image
@@ -67,8 +64,12 @@ def kineticmodel() -> None:
     ),
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
-@click.option("--petmask", default=None, type=str,
-              help="Binary mask specifying voxels where SUVR should be calculated")
+@click.option(
+    "--petmask",
+    default=None,
+    type=str,
+    help="Binary mask specifying voxels where SUVR should be calculated",
+)
 @click.option("--start", type=float, help="Start of time window for SUVR")
 @click.option("--end", type=float, help="End of time window for SUVR")
 def suvr(
@@ -101,14 +102,16 @@ def suvr(
     # refmask_img = SpatialImage.from_filename(refmask)
     reftac = pet_img.mean_timeseries_in_mask(refmask_img)
 
+    petmask_img_mat: NumpyRealNumberArray | None
     if petmask:
         petmask_img: SpatialImage = nib_load(petmask)  # type: ignore
+        petmask_img_mat = petmask_img.get_fdata().astype("bool")
     else:
-        petmask_img = None
+        petmask_img_mat = None
 
     # compute SUVR
     model = cls(reftac, pet_img)
-    model.fit(mask=petmask_img)
+    model.fit(mask=petmask_img_mat)
 
     froot, ext, addext = splitext_addext(pet)
     if outputdir is not None:

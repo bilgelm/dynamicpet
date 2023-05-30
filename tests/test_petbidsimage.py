@@ -8,11 +8,11 @@ from nibabel.nifti1 import Nifti1Image
 from numpy.typing import NDArray
 from pytest_mock import MockerFixture
 
+from dynamicpet.denoise import hypr
 from dynamicpet.petbids import PETBIDSImage
 from dynamicpet.petbids import load
 from dynamicpet.petbids.petbidsjson import PetBidsJson
 from dynamicpet.petbids.petbidsjson import get_frametiming
-from dynamicpet.denoise import hypr
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def json_dict() -> PetBidsJson:
         "FrameDuration": frame_duration.tolist(),
         "InjectionStart": 0,
         "ScanStart": 0,
-        "TracerNuclide": "C11",
+        "TracerRadionuclide": "C11",
     }
 
     return json_dict
