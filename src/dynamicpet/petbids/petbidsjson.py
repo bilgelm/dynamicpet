@@ -49,7 +49,7 @@ class PetBidsJson(TypedDict):
     FrameTimesStart: List[float]
     FrameDuration: List[float]
 
-    TracerNuclide: str
+    TracerRadionuclide: str
 
 
 def update_frametiming_from(
@@ -124,7 +124,7 @@ def get_frametiming(
 
 def get_radionuclide_halflife(json_dict: PetBidsJson) -> float:
     """Get halflife of radionuclide from PET BIDS JSON dictionary."""
-    radionuclide = json_dict["TracerNuclide"].lower().replace("-", "")
+    radionuclide = json_dict["TracerRadionuclide"].lower().replace("-", "")
 
     # convert seconds to minutes
     return HALFLIVES[radionuclide] / 60
