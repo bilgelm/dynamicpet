@@ -25,6 +25,7 @@ rpy2 = "^3.5.12"
 
 [tool.poetry.scripts]
 kineticmodel = "dynamicpet.__main__:kineticmodel"
+denoise = "dynamicpet.__main__:denoise"
 
 [tool.poetry.group.dev.dependencies]
 Pygments = ">=2.10.0"

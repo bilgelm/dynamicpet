@@ -12,6 +12,7 @@ from dynamicpet.petbids import PETBIDSImage
 from dynamicpet.petbids import load
 from dynamicpet.petbids.petbidsjson import PetBidsJson
 from dynamicpet.petbids.petbidsjson import get_frametiming
+from dynamicpet.denoise import hypr
 
 
 @pytest.fixture
@@ -292,3 +293,8 @@ def test_decay_uncorrect_correct(ti: PETBIDSImage) -> None:
     assert np.allclose(ti.dataobj, ti2.dataobj)
     assert np.all(ti.frame_start == ti2.frame_start)
     assert np.all(ti.frame_end == ti2.frame_end)
+
+
+def test_hypr_lr(ti: PETBIDSImage) -> None:
+    """Test HYPR-LR."""
+    hypr.hypr_lr(ti, fwhm=3)
