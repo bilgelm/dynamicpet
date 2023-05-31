@@ -222,7 +222,7 @@ def test_dynamic_mean_custom_weighted(tm: TemporalMatrix) -> None:
 
 def test_cumulative_integral(tm: TemporalMatrix) -> None:
     """Test cumulative integral."""
-    res = tm.cumulative_integral()
+    res = tm.cumulative_integral(integration_type="rect")
     expected = np.array([0, 50, 150, 350, 550, 950, 1350]) * 60
     assert res.shape == (tm.num_elements, tm.num_frames)
     assert np.all(expected == res)
@@ -243,7 +243,7 @@ def test_cumulative_integral_broadcasting() -> None:
     frame_duration: NDArray[np.double] = np.array([5, 5], dtype=np.double)
 
     tm2 = TemporalMatrix(dataobj, frame_start, frame_duration)
-    res = tm2.cumulative_integral()
+    res = tm2.cumulative_integral(integration_type="rect")
     expected = np.array([[0, 50], [0, 100]])
     assert res.shape == (tm2.num_elements, tm2.num_frames)
     assert np.all(expected == res)

@@ -118,7 +118,7 @@ def test_kinfitr_mrtm2(simref0: TACPair) -> None:
 def test_srtm_zhou2003(simref0: TACPair) -> None:
     """Test SRTM Zhou 2003."""
     km = SRTMZhou2003(simref0.reftac, simref0.tacs)
-    km.fit()
+    km.fit(integration_type="rect")
 
     # check that the results match those provided in kinfitr documentation
     bp: float = km.get_parameter("bp")[0]  # type: ignore

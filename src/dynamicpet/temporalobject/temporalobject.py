@@ -291,14 +291,12 @@ class TemporalObject(Generic[T], ABC):
         return delta
 
     def cumulative_integral(
-        self, integration_type: INTEGRATION_TYPE_OPTS = "rect"
+        self, integration_type: INTEGRATION_TYPE_OPTS = "trapz"
     ) -> NumpyRealNumberArray:
         """Cumulative integration starting at t=0 and ending at frame_end.
 
         Args:
             integration_type: rect (rectangular) or trapz (trapezoidal).
-                Rectangular integration uses frame duration whereas trapezoidal
-                integration uses frame mid times.
 
         Returns:
             cumulative integral, with same shape as dataobj

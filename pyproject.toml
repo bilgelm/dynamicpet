@@ -16,7 +16,7 @@ classifiers = [
 Changelog = "https://github.com/bilgelm/dynamicpet/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.10,<3.12"
 nibabel = ">=4.0.2"
 numpy = "^1.24.3"
 click = "^8.1.3"

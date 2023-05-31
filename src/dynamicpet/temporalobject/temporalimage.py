@@ -191,7 +191,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         )
         return tacs
 
-    def mean_timeseries_in_mask(self, mask: SpatialImage) -> TemporalMatrix:
+    def mean_timeseries_in_mask(self, mask: NumpyRealNumberArray) -> TemporalMatrix:
         """Get mean time activity curve (TAC) within a region of interest.
 
         Args:
@@ -201,7 +201,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
             mean time series in mask
         """
         mean_tac = TemporalMatrix(
-            self.dataobj[mask.get_fdata().astype("bool"), :].mean(axis=0),
+            self.dataobj[mask.astype("bool"), :].mean(axis=0),
             self.frame_start,
             self.frame_duration,
         )

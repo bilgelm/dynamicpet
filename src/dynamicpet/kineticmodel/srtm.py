@@ -124,7 +124,7 @@ class SRTMZhou2003(KineticModel):
 
     def fit(  # noqa: max-complexity: 12
         self,
-        integration_type: INTEGRATION_TYPE_OPTS = "rect",
+        integration_type: INTEGRATION_TYPE_OPTS = "trapz",
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = "frame_duration",
         mask: NumpyRealNumberArray | None = None,
         fwhm: RealNumber | List[RealNumber] | None = None,
