@@ -1,12 +1,11 @@
-"""Calculate standardized update value ratio (SUVR)."""
+"""Standardized update value ratio (SUVR)."""
 
 from typing import List
 
 import numpy as np
 
-from dynamicpet.temporalobject.temporalimage import TemporalImage
-from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
-
+from ..temporalobject.temporalimage import TemporalImage
+from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..typing_utils import NumpyRealNumber
 from ..typing_utils import NumpyRealNumberArray
 from .kineticmodel import KineticModel
@@ -18,9 +17,6 @@ class SUVR(KineticModel):
     SUVR = SUV (target) / SUV (reference)
          = frame duration weighted sum of target TAC /
             frame duration weighted sum of reference TAC
-
-    Before initializing the SUVR object, make sure to extract the time window
-    over which you wish to calculate SUVR.
     """
 
     @classmethod
@@ -32,10 +28,10 @@ class SUVR(KineticModel):
         """Calculate SUVR.
 
         Args:
-            mask: an optional parameter used only when tacs attribute is a
-                  TemporalImage (or inherits from TemporalImage). A 3-D binary
-                  mask that defines where to fit the kinetic model. Voxels
-                  outside the mask will be set to NA in output parametric images.
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  to fit the kinetic model. Elements outside the mask will
+                  be set to to NA in parametric estimate outputs.
 
         Example:
             >>> import numpy as np

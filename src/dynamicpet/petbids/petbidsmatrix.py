@@ -12,12 +12,16 @@ from .petbidsobject import PETBIDSObject
 
 
 class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
-    """4D image data with corresponding PET-BIDS time frame information.
+    """4-D image data with corresponding PET-BIDS time frame information.
+
+    Args:
+        dataobj: vector or k x num_frames matrix
+        json_dict: PET-BIDS json dictionary
 
     Attributes:
         _dataobj: 1 x num_frames vector or k x num_frames matrix
-        frame_start: vector containing the start times of each frame
-        frame_duration: vector containing the durations of each frame
+        frame_start: vector containing the start times of each frame, in min
+        frame_duration: vector containing the durations of each frame, in min
         json_dict: PET-BIDS json dictionary
     """
 
@@ -36,11 +40,11 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         self.json_dict: PetBidsJson = deepcopy(json_dict)
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "PETBIDSMatrix":
-        """Extract a PETBIDSMatrix from a temporally longer PETBIDSMatrix.
+        """Extract a temporally shorter PETBIDSMatrix from a PETBIDSMatrix.
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
             extracted_img: extracted PETBIDSMatrix

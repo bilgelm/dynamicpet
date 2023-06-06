@@ -9,6 +9,7 @@ import numpy as np
 from nibabel.spatialimages import SpatialImage
 
 from ..temporalobject.temporalimage import TemporalImage
+from ..temporalobject.temporalimage import image_maker
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..typing_utils import NumpyRealNumberArray
 
@@ -17,10 +18,15 @@ from ..typing_utils import NumpyRealNumberArray
 class KineticModel(ABC):
     """KineticModel abstract base class.
 
+    Args:
+        reftac: reference time activity curve (TAC), must have single element
+        tacs: TACs in regions/voxels of interest, with num_frames equal to
+              that of reftac
+
     Attributes:
         reftac: reference time activity curve (TAC), with times specified in minutes
         tacs: TACs in regions/voxels of interest, with times specified in minutes
-        parameters: kinetic model parameters
+        parameters: kinetic model parameters, of same spatial dimension as input TACs
     """
 
     reftac: TemporalMatrix
@@ -93,11 +99,14 @@ class KineticModel(ABC):
             # to the number of image voxels, then return parameter as an image;
             # otherwise, return as a matrix
             if isinstance(self.tacs, TemporalImage):
-                image_maker = self.tacs.img.__class__
+                # image_maker = self.tacs.img.__class__
+                # param_img: SpatialImage = image_maker(
+                #     self.parameters[param_name],
+                #     self.tacs.img.affine,
+                #     self.tacs.img.header,
+                # )
                 param_img: SpatialImage = image_maker(
-                    self.parameters[param_name],
-                    self.tacs.img.affine,
-                    self.tacs.img.header,
+                    self.parameters[param_name], self.tacs.img
                 )
                 return param_img
             else:
@@ -125,10 +134,10 @@ class KineticModel(ABC):
         Args:
             param_name: name of parameter to set
             param: parameter estimate
-            mask: an optional parameter. A 1-D (for TemporalMatrix TACs) or
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   the kinetic model was fitted. Elements outside the mask will
-                  be set to to NA in output parametric images.
+                  be set to to NA in parametric outputs.
         """
         # if param_name not in self.__class__.get_param_names():
         #     raise ValueError("No such parameter defined for kinetic model")
@@ -140,6 +149,11 @@ class KineticModel(ABC):
             else:
                 self.parameters[param_name] = param
         else:
-            tmp = np.empty_like(self.tacs.dataobj)
+            tmp = np.empty_like(self.tacs.dataobj[..., 0])
             tmp[mask.astype("bool")] = param
             self.parameters[param_name] = tmp
+
+    @abstractmethod
+    def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
+        """Get fitted TACs based on estimated model parameters."""
+        pass

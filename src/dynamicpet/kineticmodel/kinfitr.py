@@ -1,4 +1,5 @@
-"""Wrapper for kinfitr calls."""
+"""Wrapper for kinfitr."""
+
 from abc import ABC
 from typing import List
 from typing import Union
@@ -8,7 +9,9 @@ from rpy2.robjects import default_converter  # type: ignore
 from rpy2.robjects import numpy2ri
 from rpy2.robjects import r
 from rpy2.robjects.packages import importr  # type: ignore
+from tqdm import trange  # type: ignore
 
+from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..typing_utils import NumpyRealNumberArray
 from .kineticmodel import KineticModel
@@ -36,36 +39,27 @@ class KinfitrModel(KineticModel, ABC):
         mask: NumpyRealNumberArray | None = None,
         **kwargs: Union[NumpyRealNumberArray, float]
     ) -> None:
-        """Estimate model parameters."""
+        """Estimate model parameters.
+
+        Args:
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  to fit the kinetic model. Elements outside the mask will
+                  be set to to NA in parametric estimate outputs.
+            kwargs: optional arguments for the kinfitr function
+        """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
         num_elements = tacs.num_elements
         t_tac = self.reftac.frame_mid.flatten()
-        frame_duration = self.reftac.frame_duration.flatten()
         reftac = self.reftac.dataobj.flatten()
         roitacs = tacs.dataobj.reshape(num_elements, tacs.num_frames)
 
         param_estimates = {}
 
         with np_cv_rules.context():
-            for i in range(num_elements):
+            for i in trange(num_elements):
                 kinfitr_fun = r[self.__class__.get_r_name()]
-                if self.__class__.__name__ in [
-                    "MRTM1",
-                    "MRTM2",
-                    "RefLogan",
-                    "RefMLLogan",
-                    "RefPatlak",
-                ]:
-                    # need to read more to understand kinfitr implementation here
-                    res = kinfitr_fun(
-                        t_tac,
-                        reftac,
-                        roitacs[i, :].flatten(),
-                        dur=frame_duration,
-                        **kwargs
-                    )
-                else:
-                    res = kinfitr_fun(t_tac, reftac, roitacs[i, :].flatten(), **kwargs)
+                res = kinfitr_fun(t_tac, reftac, roitacs[i, :].flatten(), **kwargs)
                 for param_name in res["par"].dtype.names:
                     if param_name not in param_estimates:
                         param_estimates[param_name] = np.zeros((num_elements, 1))
@@ -73,6 +67,10 @@ class KinfitrModel(KineticModel, ABC):
 
         for param_name, param_estimate in param_estimates.items():
             self.set_parameter(param_name, param_estimate, mask)
+
+    def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
+        """Get fitted TACs based on estimated model parameters."""
+        raise NotImplementedError()
 
 
 class FRTM(KinfitrModel):
@@ -115,7 +113,11 @@ class MRTM2(KinfitrModel):
 
 
 class RefLogan(KinfitrModel):
-    """kinfitr refLogan wrapper."""  # DOESNT WORK, rpy2 error
+    """kinfitr refLogan wrapper."""
+
+    def __init__(self) -> None:
+        """Placeholder for raising error."""
+        raise NotImplementedError("Doesn't work due to rpy2 error")
 
     @classmethod
     def get_r_name(cls) -> str:
@@ -129,12 +131,16 @@ class RefLogan(KinfitrModel):
 
 
 class RefMLLogan(KinfitrModel):
-    """kinfitr refmlLogan wrapper."""  # NOT IMPLEMENTED
+    """kinfitr refmlLogan wrapper."""
 
-    pass
+    def __init__(self) -> None:
+        """Placeholder for raising error."""
+        raise NotImplementedError()
 
 
 class RefPatlak(KinfitrModel):
-    """kinfitr refPatlak wrapper."""  # NOT IMPLEMENTED
+    """kinfitr refPatlak wrapper."""
 
-    pass
+    def __init__(self) -> None:
+        """Placeholder for raising error."""
+        raise NotImplementedError()

@@ -13,6 +13,11 @@ from .temporalobject import check_frametiming
 class TemporalMatrix(TemporalObject["TemporalMatrix"]):
     """Matrix with corresponding time frame information.
 
+    Args:
+        dataobj: vector or k x num_frames matrix
+        frame_start: vector containing the start times of each frame
+        frame_duration: vector containing the durations of each frame
+
     Attributes:
         _dataobj: 1 x num_frames vector or k x num_frames matrix
         frame_start: vector containing the start times of each frame
@@ -67,11 +72,11 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         return self._dataobj
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "TemporalMatrix":
-        """Extract a TemporalMatrix from a temporally longer TemporalMatrix.
+        """Extract a temporally shorter TemporalMatrix from a TemporalMatrix.
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
             extracted TemporalMatrix
@@ -140,18 +145,19 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
     def timeseries_in_mask(
         self, mask: NumpyRealNumberArray | None = None
     ) -> "TemporalMatrix":
-        """Get timeseries (within a region of interest).
+        """Get timeseries for each element within a subset of the elements.
 
         Args:
-            mask: binary mask
+            mask: Binary mask defining the subset, with shape = (num_elements, 1)
 
         Returns:
-            time series (in mask if provided, otherwise in entire image)
+            timeseries (in mask if provided, otherwise a copy of self is returned)
 
         Raises:
             ValueError: binary mask is incompatible
         """
         if mask is None:
+            # we are essentially returning self, but will make a deepcopy
             dataobj = self.dataobj.reshape((self.num_elements, self.num_frames))
         elif mask.shape == self.dataobj.shape[:-1]:
             dataobj = self.dataobj[mask.astype("bool"), :]

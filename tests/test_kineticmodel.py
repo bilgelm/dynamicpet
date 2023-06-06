@@ -82,9 +82,13 @@ def test_suvr_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
     """Test SUVR calculation using TemporalImage."""
     km = SUVR(reftac, tacs_img)
     km.fit()
+
+    fitted_tacs = km.fitted_tacs()
+
     suvr_img: SpatialImage = km.get_parameter("suvr")  # type: ignore
     assert suvr_img.shape == (1, 1, 2)
     assert np.all(suvr_img.dataobj == np.array([[[2, 3]]]))
+    assert np.all(fitted_tacs.dataobj == tacs_img.dataobj)
 
 
 def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
@@ -96,7 +100,6 @@ def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> No
     assert dvr_img1.shape == (1, 1, 2)
 
     km.fit(integration_type="trapz")
-    dvr_img2: SpatialImage = km.get_parameter("bp")  # type: ignore
-    # dvr_img2_dataobj: NumpyRealNumberArray = dvr_img2.get_fdata()
+    bp_img2: SpatialImage = km.get_parameter("bp")  # type: ignore
 
-    assert np.allclose(dvr_img1.get_fdata(), dvr_img2.get_fdata() + 1)
+    assert np.allclose(dvr_img1.get_fdata(), bp_img2.get_fdata() + 1)

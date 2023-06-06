@@ -193,12 +193,15 @@ def test_srtmzhou2003_tm(
     # to fit to obtain the best possible recovery of true values
     km.fit(integration_type="trapz")
 
+    fitted_tacs = km.fitted_tacs()
+
     bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
     r1: NumpyRealNumberArray = km.get_parameter("r1")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
-    assert abs(bp[0] - bp_true) < bp_true * relative_tol
-    assert abs(r1[0] - r1_true) < r1_true * relative_tol
+    assert np.allclose(bp, bp_true, rtol=relative_tol)
+    assert np.allclose(r1, r1_true, rtol=relative_tol)
+    assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=0.01)
 
 
 def test_srtmzhou2003_ti(
@@ -228,14 +231,17 @@ def test_srtmzhou2003_ti(
     # to fit to obtain the best possible recovery of true values
     km.fit(integration_type="trapz", fwhm=3)
 
+    fitted_tacs = km.fitted_tacs()
+
     bp: SpatialImage = km.get_parameter("bp")  # type: ignore
     r1: SpatialImage = km.get_parameter("r1")  # type: ignore
     r1_lrsc: SpatialImage = km.get_parameter("r1_lrsc")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
-    assert abs(bp.dataobj[0, 0, 0] - bp_true) < bp_true * relative_tol
-    assert abs(r1.dataobj[0, 0, 0] - r1_true) < r1_true * relative_tol
-    assert abs(r1_lrsc.dataobj[0, 0, 0] - r1_true) < r1_true * relative_tol
+    assert np.allclose(bp.dataobj, bp_true, rtol=relative_tol)
+    assert np.allclose(r1.dataobj, r1_true, rtol=relative_tol)
+    assert np.allclose(r1_lrsc.dataobj, r1_true, rtol=relative_tol)
+    assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=0.01)
 
 
 def test_srtmlammertsma1996_tm(
@@ -255,12 +261,15 @@ def test_srtmlammertsma1996_tm(
     km = SRTMLammertsma1996(reftac, tac)
     km.fit()
 
+    fitted_tacs = km.fitted_tacs()
+
     bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
     r1: NumpyRealNumberArray = km.get_parameter("r1")  # type: ignore
 
     relative_tol = 0.02  # .02 means that 2% error is tolerated
-    assert abs(bp[0] - bp_true) < bp_true * relative_tol
-    assert abs(r1[0] - r1_true) < r1_true * relative_tol
+    assert np.allclose(bp, bp_true, rtol=relative_tol)
+    assert np.allclose(r1, r1_true, rtol=relative_tol)
+    assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=relative_tol)
 
 
 def test_srtmkinfitr_tm(
@@ -283,6 +292,6 @@ def test_srtmkinfitr_tm(
     bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
     r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
 
-    relative_tol = 0.006  # .02 means that 2% error is tolerated
-    assert abs(bp[0] - bp_true) < bp_true * relative_tol
-    assert abs(r1[0] - r1_true) < r1_true * relative_tol
+    relative_tol = 0.006
+    assert np.allclose(bp, bp_true, rtol=relative_tol)
+    assert np.allclose(r1, r1_true, rtol=relative_tol)

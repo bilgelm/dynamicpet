@@ -81,8 +81,8 @@ def get_frametiming(
     FrameTimesStart: Start times for each frame relative to TimeZero in seconds
     ScanStart: Time of start of scan with respect to TimeZero in seconds
     InjectionStart: Time of start of injection with respect to TimeZero in
-                    seconds. This corresponds to DICOM Tag (0018,1042)
-                    converted to seconds relative to TimeZero.
+    seconds. This corresponds to DICOM Tag (0018,1042) converted to seconds
+    relative to TimeZero.
     At least one of ScanStart and InjectionStart should be 0.
     If ScanStart is 0, FrameTimesStart are shifted so that outputs are relative
     to injection start.

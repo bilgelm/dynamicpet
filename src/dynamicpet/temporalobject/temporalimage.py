@@ -16,7 +16,12 @@ from .temporalobject import check_frametiming
 
 
 class TemporalImage(TemporalObject["TemporalImage"]):
-    """4D image with corresponding time frame information.
+    """4-D image with corresponding time frame information.
+
+    Args:
+        img: a SpatialImage object with a 3-D or 4-D dataobj
+        frame_start: vector containing the start time of each frame
+        frame_duration: vector containing the duration of each frame
 
     Attributes:
         img: SpatialImage storing image data matrix and header
@@ -32,15 +37,15 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         frame_start: NumpyRealNumberArray,
         frame_duration: NumpyRealNumberArray,
     ) -> None:
-        """4D image with corresponding time frame information.
+        """4-D image with corresponding time frame information.
 
         Args:
-            img: a SpatialImage object with a 3D or 4D dataobj
+            img: a SpatialImage object with a 3-D or 4-D dataobj
             frame_start: vector containing the start time of each frame
             frame_duration: vector containing the duration of each frame
 
         Raises:
-            ValueError: Image is not 3D or 4D with spatial axes first
+            ValueError: Image is not 3-D or 4-D with spatial axes first
             TimingError: Image has inconsistent timing info
         """
         if not spatial_axes_first(img):
@@ -58,12 +63,12 @@ class TemporalImage(TemporalObject["TemporalImage"]):
 
         self.img: SpatialImage
         if img.ndim == 3:
-            # if image is 3D, store data matrix with a single element in 4th dim
+            # if image is 3-D, store data matrix with a single element in 4th dim
             self.img = img.slicer[..., np.newaxis]
         elif img.ndim == 4:
             self.img = img
         else:
-            raise ValueError("Image must be 3D or 4D")
+            raise ValueError("Image must be 3-D or 4-D")
 
         if not self.img.shape[3] == len(self.frame_start):
             raise TimingError(
@@ -91,11 +96,11 @@ class TemporalImage(TemporalObject["TemporalImage"]):
     #     return func
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "TemporalImage":
-        """Extract a TemporalImage from a temporally longer TemporalImage.
+        """Extract a temporally shorter TemporalImage from a TemporalImage.
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
             extracted_img: extracted TemporalImage
@@ -131,8 +136,9 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         )
 
         # Create a SpatialImage of the same class as self.img
-        image_maker = self.img.__class__
-        mean_img = image_maker(dyn_mean, self.img.affine, self.img.header)
+        # image_maker = self.img.__class__
+        # mean_img = image_maker(dyn_mean, self.img.affine, self.img.header)
+        mean_img = image_maker(dyn_mean, self.img)
 
         return mean_img
 
@@ -166,17 +172,18 @@ class TemporalImage(TemporalObject["TemporalImage"]):
     def timeseries_in_mask(
         self, mask: NumpyRealNumberArray | None = None
     ) -> TemporalMatrix:
-        """Get the time activity curves (TAC) (within a region of interest).
+        """Get time activity curves (TAC) for each voxel within a region of interest.
 
         Args:
-            mask: 3D binary mask
+            mask: 3-D binary mask
 
         Returns:
-            time series (in mask if provided, otherwise in entire image)
+            timeseries (in mask if provided, otherwise in entire image)
 
         Raises:
             ValueError: binary mask is incompatible
         """
+        # stack voxelwise TACs as rows of a 2-D matrix
         if mask is None:
             dataobj = self.dataobj.reshape((self.num_elements, self.num_frames))
         elif mask.shape == self.dataobj.shape[:-1]:
@@ -195,7 +202,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         """Get mean time activity curve (TAC) within a region of interest.
 
         Args:
-            mask: 3D binary mask
+            mask: 3-D binary mask
 
         Returns:
             mean time series in mask
@@ -206,3 +213,17 @@ class TemporalImage(TemporalObject["TemporalImage"]):
             self.frame_duration,
         )
         return mean_tac
+
+
+def image_maker(x: NumpyRealNumberArray, img: SpatialImage) -> SpatialImage:
+    """Make image from dataobj.
+
+    Args:
+        x: data object
+        img: image whose class, affine, and header will be used to
+                make x into an image
+
+    Returns:
+        created image
+    """
+    return img.__class__(x, img.affine, img.header)

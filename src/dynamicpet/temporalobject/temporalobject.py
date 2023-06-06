@@ -40,7 +40,7 @@ class TemporalObject(Generic[T], ABC):
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        """Get shape of data matrix."""
+        """Get shape of dataobj."""
         return self.dataobj.shape
 
     @property
@@ -84,11 +84,11 @@ class TemporalObject(Generic[T], ABC):
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
-            start_index: start index of interval to extract, inclusive
-            end_index: end index of interval to extract, exclusive
+            tuple of start index (inclusive) and end index (exclusive) of
+            interval to extract
 
         Raises:
             TimingError: extraction times are out of bound
@@ -171,7 +171,11 @@ class TemporalObject(Generic[T], ABC):
     def overlap_with(self, other: T) -> List[Tuple[RealNumber, RealNumber]]:
         """Determine temporal overlap with another TemporalObject of same type.
 
-        Frame start times are inclusive and end times are exclusive.
+        This is an overlap finding problem in a set of line segments.
+        Each frame is a line segment, with start and end of the line segment
+        corresponding to frame start and end times, respectively.
+        For the purpose of defining overlap, these line segments are treated as
+        being closed at the start and open at the end.
         If there is no overlap, the output will be an empty list.
 
         Args:
@@ -216,7 +220,10 @@ class TemporalObject(Generic[T], ABC):
     @property
     @abstractmethod
     def dataobj(self) -> NumpyRealNumberArray:
-        """Get data object, which can be a 2-D or a 3-D matrix."""
+        """Get data object, which can be a 2-D or a 3-D matrix.
+
+        The last dimension of dataobj corresponds to time.
+        """
         pass
 
     @abstractmethod
@@ -225,7 +232,7 @@ class TemporalObject(Generic[T], ABC):
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
             extracted time interval
@@ -234,7 +241,7 @@ class TemporalObject(Generic[T], ABC):
 
     @abstractmethod
     def concatenate(self, other: T) -> T:
-        """Concatenate with another TemporalObject.
+        """Concatenate with another TemporalObject of same type.
 
         Args:
             other: TemporalObject to concatenate
@@ -254,10 +261,9 @@ class TemporalObject(Generic[T], ABC):
             first_img: first of the two split TemporalObjects, not including split_time
             second_img: second of the two split TemporalObjects, including split_time
         """
-        return (
-            self.extract(self.start_time, split_time),
-            self.extract(split_time, self.end_time),
-        )
+        first_img = self.extract(self.start_time, split_time)
+        second_img = self.extract(split_time, self.end_time)
+        return first_img, second_img
 
     def get_weights(
         self, weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None
@@ -293,7 +299,11 @@ class TemporalObject(Generic[T], ABC):
     def cumulative_integral(
         self, integration_type: INTEGRATION_TYPE_OPTS = "trapz"
     ) -> NumpyRealNumberArray:
-        """Cumulative integration starting at t=0 and ending at frame_end.
+        """Cumulative integration starting at t=0 and ending at each frame_end.
+
+        If start_time > 0, the triangular area between (t=0, 0) and
+        (t=start_time, dataobj value at 0th frame) will be added to each
+        cumulative integral.
 
         Args:
             integration_type: rect (rectangular) or trapz (trapezoidal).

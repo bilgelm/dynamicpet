@@ -1,4 +1,4 @@
-"""Kinetic modeling for dynamic PET using SRTM by Zhou et al. (2003)."""
+"""Simplified reference tissue model (SRTM)."""
 
 from typing import List
 from typing import Tuple
@@ -10,8 +10,10 @@ from numpy.linalg import LinAlgError
 from numpy.linalg import solve
 from scipy.optimize import curve_fit  # type: ignore
 from scipy.signal import convolve  # type: ignore
+from tqdm import trange  # type: ignore
 
 from ..temporalobject.temporalimage import TemporalImage
+from ..temporalobject.temporalimage import image_maker
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
 from ..temporalobject.temporalobject import WEIGHT_OPTS
@@ -38,7 +40,19 @@ class SRTMLammertsma1996(KineticModel):
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
         mask: NumpyRealNumberArray | None = None,
     ) -> None:
-        """Estimate model parameters."""
+        """Estimate model parameters.
+
+        Args:
+            weight_by: [optional] frame weights used in model fitting.
+                       If weight_by == None, each frame is weighted equally.
+                       If weight_by == 'frame_duration', each frame is weighted
+                       proportionally to its duration (inverse variance weighting).
+                       If weight_by is a 1-D array, then specified values are used.
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  to fit the kinetic model. Elements outside the mask will
+                  be set to to NA in parametric estimate outputs.
+        """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
         num_elements = tacs.num_elements
         roitacs = tacs.dataobj.reshape(num_elements, tacs.num_frames)
@@ -48,7 +62,7 @@ class SRTMLammertsma1996(KineticModel):
         bp = np.zeros((num_elements, 1))
         r1 = np.zeros((num_elements, 1))
         k2 = np.zeros((num_elements, 1))
-        for i in range(num_elements):
+        for i in trange(num_elements):
             init_guess = (1.5, 1.0, 0.1)
             popt, _ = curve_fit(
                 srtm_model,
@@ -64,11 +78,44 @@ class SRTMLammertsma1996(KineticModel):
         self.set_parameter("r1", r1, mask)
         self.set_parameter("k2", k2, mask)
 
+    def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
+        """Get fitted TACs based on estimated model parameters."""
+        num_elements = self.tacs.num_elements
+        fitted_tacs_dataobj = np.empty_like(self.tacs.dataobj)
+
+        for i in trange(num_elements):
+            idx = np.unravel_index(i, self.tacs.shape[:-1])
+            bp = self.parameters["bp"][*idx]
+            r1 = self.parameters["r1"][*idx]
+            k2 = self.parameters["k2"][*idx]
+            if bp or r1 or k2:
+                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp, r1, k2)
+
+        if isinstance(self.tacs, TemporalImage):
+            img = image_maker(fitted_tacs_dataobj, self.tacs.img)
+            ti = TemporalImage(img, self.tacs.frame_start, self.tacs.frame_duration)
+            return ti
+        else:
+            tm = TemporalMatrix(
+                fitted_tacs_dataobj, self.tacs.frame_start, self.tacs.frame_duration
+            )
+            return tm
+
 
 def srtm_model(
     reftac: TemporalMatrix, bp: float, r1: float, k2: float
 ) -> NumpyRealNumberArray:
-    """SRTM model for a target TAC."""
+    """SRTM model to generate a target TAC.
+
+    Args:
+        reftac: reference TAC
+        bp: binding potential
+        r1: relative radiotracer delivery parameter, R1
+        k2: k2
+
+    Returns:
+        target TAC
+    """
     # because reftac frames are not necessarily evenly spaced,
     # we cannot use convolve. To resolve this issue, we first upsample
     # to a higher frequency uniform timing grid, convolve, and then
@@ -135,14 +182,15 @@ class SRTMZhou2003(KineticModel):
             integration_type: If 'rect', rectangular integration is used for TACs.
                               If 'trapz', trapezoidal integration is used based
                               on middle timepoint of each frame.
-            weight_by: If None, each frame is weighted equally.
-                       If 'frame_duration', each frame is weighted proportionally
-                       to its duration (inverse variance weighting).
-                       If a 1-D array, then specified values are used.
-            mask: an optional parameter used only when tacs attribute is a
-                  TemporalImage (or inherits from TemporalImage). A 3-D binary
-                  mask that defines where to fit the kinetic model. Voxels
-                  outside the mask will be set to NA in output parametric images
+            weight_by: [optional] frame weights used in model fitting.
+                       If weight_by == None, each frame is weighted equally.
+                       If weight_by == 'frame_duration', each frame is weighted
+                       proportionally to its duration (inverse variance weighting).
+                       If weight_by is a 1-D array, then specified values are used.
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  to fit the kinetic model. Elements outside the mask will
+                  be set to to NA in parametric estimate outputs.
             fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
         """
         # get reference TAC as a 1-D vector
@@ -179,7 +227,7 @@ class SRTMZhou2003(KineticModel):
         k2a = np.zeros((num_elements, 1))
         noise_var_eq_r1 = np.zeros((num_elements, 1))
 
-        for k in range(num_elements):
+        for k in trange(num_elements):
             # get TAC and its cumulative integral as 1-D vectors
             tac = tacs_mat[k, :][:, np.newaxis]
             int_tac = int_tacs_mat[k, :][:, np.newaxis]
@@ -235,7 +283,7 @@ class SRTMZhou2003(KineticModel):
             k2_lrsc = np.zeros((num_elements, 1))
             k2a_lrsc = np.zeros((num_elements, 1))
 
-            for k in range(num_elements):
+            for k in trange(num_elements):
                 # get TAC and its cumulative integral as 1-D vectors
                 tac = tacs_mat[k, :][:, np.newaxis]
                 int_tac = int_tacs_mat[k, :][:, np.newaxis]
@@ -267,10 +315,10 @@ class SRTMZhou2003(KineticModel):
         """Refine R1.
 
         Args:
-            mask: an optional parameter used only when tacs attribute is a
-                  TemporalImage (or inherits from TemporalImage). A 3-D binary
-                  mask that defines where to fit the kinetic model. Voxels
-                  outside the mask will be set to NA in output parametric images
+            mask: [optional] A 1-D (for TemporalMatrix TACs) or
+                  3-D (for TemporalImage TACs) binary mask that defines where
+                  to fit the kinetic model. Elements outside the mask will
+                  be set to to NA in parametric estimate outputs.
             fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
 
         Returns:
@@ -342,16 +390,31 @@ class SRTMZhou2003(KineticModel):
 
         return smooth_r1_mat, smooth_k2_mat, smooth_k2a_mat, h
 
+    def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
+        """Get fitted TACs based on estimated model parameters."""
+        num_elements = self.tacs.num_elements
+        fitted_tacs_dataobj = np.empty_like(self.tacs.dataobj)
 
-def image_maker(x: NumpyRealNumberArray, img: SpatialImage) -> SpatialImage:
-    """Make image from dataobj.
+        use_lrsc = "r1_lrsc" in self.parameters
 
-    Args:
-        x: data object
-        img: image whose class, affine, and header will be used to
-                make x into an image
+        for i in trange(num_elements):
+            idx = np.unravel_index(i, self.tacs.shape[:-1])
+            dvr = self.parameters["dvr"][*idx]
+            r1 = self.parameters["r1"][*idx]
+            k2 = self.parameters["k2"][*idx]
+            if dvr or r1 or k2:
+                bp = dvr - 1
+                if use_lrsc:
+                    r1 = self.parameters["r1_lrsc"][*idx]
+                    k2 = self.parameters["k2_lrsc"][*idx]
+                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp, r1, k2)
 
-    Returns:
-        created image
-    """
-    return img.__class__(x, img.affine, img.header)
+        if isinstance(self.tacs, TemporalImage):
+            img = image_maker(fitted_tacs_dataobj, self.tacs.img)
+            ti = TemporalImage(img, self.tacs.frame_start, self.tacs.frame_duration)
+            return ti
+        else:
+            tm = TemporalMatrix(
+                fitted_tacs_dataobj, self.tacs.frame_start, self.tacs.frame_duration
+            )
+            return tm

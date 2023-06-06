@@ -36,15 +36,15 @@ INTEGRATION_TYPES = (
 WEIGHTS = str(WEIGHT_OPTS).replace("'", "").split("[")[1].split("]")[0].split(", ")
 
 
-@click.group()
-def denoise() -> None:
-    """Denoising."""
-    pass
-
-
-@denoise.command()
+@click.command()
 @click.argument("pet", type=str)
 @click.argument("fwhm", type=float)
+@click.option(
+    "--method",
+    type=click.Choice(["HYPR-LR"], case_sensitive=False),
+    required=True,
+    help="Name of denoising method",
+)
 @click.option(
     "--output",
     type=str,
@@ -54,8 +54,8 @@ def denoise() -> None:
     ),
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
-def hypr_lr(pet: str, fwhm: float, output: str | None, json: str | None) -> None:
-    """Perform HYPR-LR denoising.
+def denoise(pet: str, fwhm: float, output: str | None, json: str | None) -> None:
+    """Perform dynamic PET denoising.
 
     PET: 3-D or 4-D PET image
 
@@ -94,11 +94,19 @@ def hypr_lr(pet: str, fwhm: float, output: str | None, json: str | None) -> None
     "--petmask",
     default=None,
     type=str,
-    help="Binary mask specifying voxels where model should be fitted",
+    help=(
+        "Binary mask specifying voxels where model should be fitted. "
+        "Voxels outside this binary mask in the resulting parametric images "
+        "will be set to NA."
+    ),
 )
 @click.option("--start", type=float, help="Start of time window for model")
 @click.option("--end", type=float, help="End of time window for model")
-@click.option("--fwhm", type=float, help="Full width at half max in mm for smoothing")
+@click.option(
+    "--fwhm",
+    type=float,
+    help="Full width at half max in mm for smoothing, used for some models",
+)
 @click.option(
     "--weight_by",
     type=click.Choice(WEIGHTS, case_sensitive=False),
@@ -147,7 +155,7 @@ def kineticmodel(
         pet_img = pet_img.extract(start, end)
 
     refmask_img_mat: NumpyRealNumberArray = (
-        nib_load(refmask).get_data().astype("bool")  # type: ignore
+        nib_load(refmask).get_fdata().astype("bool")  # type: ignore
     )
 
     petmask_img_mat: NumpyRealNumberArray | None

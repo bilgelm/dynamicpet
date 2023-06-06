@@ -10,6 +10,7 @@ from nibabel.loadsave import load as nib_load
 from nibabel.spatialimages import SpatialImage
 
 from ..temporalobject.temporalimage import TemporalImage
+from ..temporalobject.temporalimage import image_maker
 from ..typing_utils import RealNumber
 from .petbidsjson import PetBidsJson
 from .petbidsjson import get_frametiming
@@ -19,20 +20,24 @@ from .petbidsobject import PETBIDSObject
 
 
 class PETBIDSImage(TemporalImage, PETBIDSObject):
-    """4D image data with corresponding PET-BIDS time frame information.
+    """4-D image data with corresponding PET-BIDS time frame information.
+
+    Args:
+        img: a SpatialImage object with a 3-D or 4-D dataobj
+        json_dict: PET-BIDS json dictionary
 
     Attributes:
         img: SpatialImage storing image data matrix and header
-        frame_start: vector containing the start times of each frame
-        frame_duration: vector containing the durations of each frame
+        frame_start: vector containing the start times of each frame, in min
+        frame_duration: vector containing the durations of each frame, in min
         json_dict: PET-BIDS json dictionary
     """
 
     def __init__(self, img: SpatialImage, json_dict: PetBidsJson) -> None:
-        """4D image data with corresponding PET-BIDS time frame information.
+        """4-D image data with corresponding PET-BIDS time frame information.
 
         Args:
-            img: a SpatialImage object with a 3D or 4D dataobj
+            img: a SpatialImage object with a 3-D or 4-D dataobj
             json_dict: PET-BIDS json dictionary
         """
         frame_start, frame_duration = get_frametiming(json_dict)
@@ -43,11 +48,11 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         self.json_dict: PetBidsJson = deepcopy(json_dict)
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "PETBIDSImage":
-        """Extract a PETBIDSImage from a temporally longer PETBIDSImage.
+        """Extract a temporally shorter PETBIDSImage from a PETBIDSImage.
 
         Args:
             start_time: time at which to begin, inclusive
-            end_time: time at which to stop, exclusive
+            end_time: time at which to stop, inclusive
 
         Returns:
             extracted_img: extracted PETBIDSImage
@@ -84,24 +89,29 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         return concat_res
 
     def decay_correct(self) -> "PETBIDSImage":
-        """Return decay corrected PETBIDSImage."""
+        """Return PETBIDSImage decay corrected to time zero."""
         tacs = self.get_decay_corrected_tacs()
         # Create a SpatialImage of the same class as self.img
-        image_maker = self.img.__class__
-        corrected_img = image_maker(
-            np.reshape(tacs, self.shape), self.img.affine, self.img.header
-        )
+        # image_maker = self.img.__class__
+        # corrected_img = image_maker(
+        #     np.reshape(tacs, self.shape), self.img.affine, self.img.header
+        # )
+        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
         return PETBIDSImage(corrected_img, self.json_dict)
 
     def decay_uncorrect(self) -> "PETBIDSImage":
-        """Return decay uncorrected PETBIDSImage."""
+        """Return decay uncorrected PETBIDSImage.
+
+        This function assumes decay correction was to time zero.
+        """
         tacs = self.get_decay_uncorrected_tacs()
         # Create a SpatialImage of the same class as self.img
-        image_maker = self.img.__class__
-        corrected_img = image_maker(
-            np.reshape(tacs, self.shape), self.img.affine, self.img.header
-        )
+        # image_maker = self.img.__class__
+        # corrected_img = image_maker(
+        #     np.reshape(tacs, self.shape), self.img.affine, self.img.header
+        # )
+        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
         return PETBIDSImage(corrected_img, self.json_dict)
 
@@ -114,12 +124,12 @@ def load(
     """Load a PET image and accompanying BIDS json.
 
     Args:
-        filename: path to 4D image file to load
-        jsonfilename: path to csv file containing frame timing information
-        kwargs: Keyword arguments to format-specific load (see nibabel.load)
+        filename: path to 4-D image file to load
+        jsonfilename: path to PET-BIDS json file with frame timing info
+        kwargs: keyword arguments to format-specific load (see nibabel.load)
 
     Returns:
-        temporal image object
+        loaded image
 
     Raises:
         FileNotFoundError: filename or jsonfilename was not found
