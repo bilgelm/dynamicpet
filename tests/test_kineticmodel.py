@@ -94,12 +94,11 @@ def test_suvr_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
 def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
     """Test SRTM Zhou 2003 using TemporalImage."""
     km = SRTMZhou2003(reftac, tacs_img)
-    km.fit(integration_type="rect")
-    dvr_img1: SpatialImage = km.get_parameter("dvr")  # type: ignore
-
-    assert dvr_img1.shape == (1, 1, 2)
-
     km.fit(integration_type="trapz")
-    bp_img2: SpatialImage = km.get_parameter("bp")  # type: ignore
+    dvr_img: SpatialImage = km.get_parameter("dvr")  # type: ignore
 
-    assert np.allclose(dvr_img1.get_fdata(), bp_img2.get_fdata() + 1)
+    assert dvr_img.shape == (1, 1, 2)
+
+    bp_img: SpatialImage = km.get_parameter("bp")  # type: ignore
+
+    assert np.allclose(dvr_img.get_fdata(), bp_img.get_fdata() + 1)

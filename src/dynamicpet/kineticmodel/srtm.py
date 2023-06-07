@@ -7,7 +7,7 @@ import numpy as np
 from nibabel.processing import smooth_image
 from nibabel.spatialimages import SpatialImage
 from numpy.linalg import LinAlgError
-from numpy.linalg import solve
+from scipy.linalg import solve  # type: ignore
 from scipy.optimize import curve_fit  # type: ignore
 from scipy.signal import convolve  # type: ignore
 from tqdm import trange  # type: ignore
@@ -241,7 +241,7 @@ class SRTMZhou2003(KineticModel):
 
             b: NumpyRealNumberArray
             try:
-                b = solve(x.T @ w @ x, x.T @ w @ int_tac)
+                b = solve(x.T @ w @ x, x.T @ w @ int_tac, assume_a="sym")
             except LinAlgError:
                 b = np.zeros((3, 1))
 
@@ -258,7 +258,7 @@ class SRTMZhou2003(KineticModel):
             # based on Eq. 8 in Zhou et al.
             x = np.column_stack((reftac, int_reftac, -int_tac))
             try:
-                b = solve(x.T @ w @ x, x.T @ w @ tac)
+                b = solve(x.T @ w @ x, x.T @ w @ tac, assume_a="sym")
             except LinAlgError:
                 b = np.zeros((3, 1))
 
@@ -297,7 +297,9 @@ class SRTMZhou2003(KineticModel):
                     (smooth_r1_mat[k], smooth_k2_mat[k], smooth_k2a_mat[k])
                 )
                 try:
-                    b = solve(x.T @ w @ x + h_d, x.T @ w @ tac + h_d @ b_sc)
+                    b = solve(
+                        x.T @ w @ x + h_d, x.T @ w @ tac + h_d @ b_sc, assume_a="sym"
+                    )
                 except LinAlgError:
                     b = np.zeros((3, 1))
 
