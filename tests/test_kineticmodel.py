@@ -87,7 +87,7 @@ def test_suvr_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
 
     suvr_img: SpatialImage = km.get_parameter("suvr")  # type: ignore
     assert suvr_img.shape == (1, 1, 2)
-    assert np.all(suvr_img.dataobj == np.array([[[2, 3]]]))
+    assert np.all(suvr_img.get_fdata() == np.array([[[2, 3]]]))
     assert np.all(fitted_tacs.dataobj == tacs_img.dataobj)
 
 

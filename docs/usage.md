@@ -6,6 +6,7 @@ PET image inputs to _Dynamic PET_ functions should be accompanied by a `.json` f
 .. autoclass:: dynamicpet.petbids.petbidsjson.PetBidsJson
     :members:
     :undoc-members:
+    :noindex:
 ```
 
 PET inputs should be 4-D images (with the last dimension corresponding to time), with the exception of PET input to standardized uptake value ratio (SUVR) calculation, which can be 3- or 4-D.

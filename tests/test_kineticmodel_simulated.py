@@ -238,9 +238,9 @@ def test_srtmzhou2003_ti(
     r1_lrsc: SpatialImage = km.get_parameter("r1_lrsc")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
-    assert np.allclose(bp.dataobj, bp_true, rtol=relative_tol)
-    assert np.allclose(r1.dataobj, r1_true, rtol=relative_tol)
-    assert np.allclose(r1_lrsc.dataobj, r1_true, rtol=relative_tol)
+    assert np.allclose(bp.get_fdata(), bp_true, rtol=relative_tol)
+    assert np.allclose(r1.get_fdata(), r1_true, rtol=relative_tol)
+    assert np.allclose(r1_lrsc.get_fdata(), r1_true, rtol=relative_tol)
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=0.01)
 
 
