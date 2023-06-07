@@ -33,11 +33,6 @@ def simref0() -> TACPair:
     # mitigate overlap issues by manipulating frame_duration
     frame_duration = np.append(frame_start[1:] - frame_start[:-1], frame_duration[-1])
 
-    print(frame_start)
-    print(frame_duration)
-    frame_end = frame_start + frame_duration
-    print(frame_end[:-1] - frame_start[1:])
-
     # drop first frame (which has 0 duration, so creates TemporalMatrix problems)
     # this should not affect kinfitr functions as they will add the 0 back
     reftac_tm = TemporalMatrix(reftac[1:], frame_start[1:], frame_duration[1:])
@@ -125,10 +120,6 @@ def test_srtm_zhou2003(simref0: TACPair) -> None:
     r1: float = km.get_parameter("r1")[0]  # type: ignore
     k2: float = km.get_parameter("k2")[0]  # type: ignore
 
-    print(bp)
-    print(r1)
-    print(k2)
-
     assert np.round(bp, 2) == round(1.488339, 2)
     assert np.round(r1, 1) == round(1.233546, 1)
     assert np.round(k2, 1) == round(0.101624, 1)
@@ -144,10 +135,6 @@ def test_srtm_zhou2003_trapz(simref0: TACPair) -> None:
     r1: float = km.get_parameter("r1")[0]  # type: ignore
     k2: float = km.get_parameter("k2")[0]  # type: ignore
 
-    print(bp)
-    print(r1)
-    print(k2)
-
     assert np.round(bp, 1) == round(1.488339, 1)
     assert np.round(r1, 1) == round(1.233546, 1)
     assert np.round(k2, 1) == round(0.101624, 1)
@@ -162,10 +149,6 @@ def test_srtm_lammertsma1996(simref0: TACPair) -> None:
     bp: float = km.get_parameter("bp")[0]  # type: ignore
     r1: float = km.get_parameter("r1")[0]  # type: ignore
     k2: float = km.get_parameter("k2")[0]  # type: ignore
-
-    print(bp)
-    print(r1)
-    print(k2)
 
     assert np.round(bp, 1) == round(1.488339, 1)
     assert np.round(r1, 1) == round(1.233546, 1)

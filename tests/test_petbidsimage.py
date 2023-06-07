@@ -114,7 +114,7 @@ def test_pointer(img: Nifti1Image, json_dict: PetBidsJson) -> None:
 
 def test_num_voxels(ti: PETBIDSImage, img: Nifti1Image) -> None:
     """Test number of voxels."""
-    assert ti.num_voxels == img.dataobj[..., 0].size
+    assert ti.num_voxels == np.prod(img.shape[:-1])
 
 
 def test_num_frames(ti: PETBIDSImage, img: Nifti1Image) -> None:

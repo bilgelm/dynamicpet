@@ -18,7 +18,6 @@ from .kineticmodel import KineticModel
 
 
 np_cv_rules = default_converter + numpy2ri.converter
-kinfitr = importr("kinfitr")
 
 
 class KinfitrModel(KineticModel, ABC):
@@ -54,6 +53,7 @@ class KinfitrModel(KineticModel, ABC):
         reftac = self.reftac.dataobj.flatten()
         roitacs = tacs.dataobj.reshape(num_elements, tacs.num_frames)
 
+        importr("kinfitr")
         param_estimates = {}
 
         with np_cv_rules.context():

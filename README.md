@@ -40,7 +40,7 @@ _Dynamic PET_ provides a command line interface (CLI) for easy image processing 
 
 ## Requirements
 
-_Dynamic PET_ requires Python 3.10+ and the following modules:
+_Dynamic PET_ requires Python 3.11+ and the following modules:
 `numpy` and `scipy` for vector and matrix operations,
 `nibabel` for neuroimaging data I/O and simple manipulations, and
 `click` for the CLI.
