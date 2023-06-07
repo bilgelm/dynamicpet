@@ -346,20 +346,22 @@ class SRTMZhou2003(KineticModel):
         k2_img: SpatialImage = self.get_parameter("k2")  # type: ignore
         k2a_img: SpatialImage = self.get_parameter("k2a")  # type: ignore
         noise_var_eq_r1_data = noise_var_eq_r1_img.get_fdata()
+        # we add a small number to the denominator to prevent division by zero
+        eps = np.finfo(float).eps
         h0 = (
             m
             * noise_var_eq_r1_data
-            / np.square(r1_img.get_fdata() - smooth_r1_img.get_fdata())
+            / (np.square(r1_img.get_fdata() - smooth_r1_img.get_fdata()) + eps)
         )
         h1 = (
             m
             * noise_var_eq_r1_data
-            / np.square(k2_img.get_fdata() - smooth_k2_img.get_fdata())
+            / (np.square(k2_img.get_fdata() - smooth_k2_img.get_fdata()) + eps)
         )
         h2 = (
             m
             * noise_var_eq_r1_data
-            / np.square(k2a_img.get_fdata() - smooth_k2a_img.get_fdata())
+            / (np.square(k2a_img.get_fdata() - smooth_k2a_img.get_fdata()) + eps)
         )
 
         h0_img = image_maker(h0, smooth_r1_img)

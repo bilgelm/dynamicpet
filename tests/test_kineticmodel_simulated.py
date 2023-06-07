@@ -155,7 +155,7 @@ def get_tacs_and_reftac_dataobj(
     frame_end = frame_start + frame_duration
 
     # initial condition
-    y0 = [10, 0, 0]
+    y0 = [200, 0, 0]
 
     # number of time points
     num_ode_pts = 500
