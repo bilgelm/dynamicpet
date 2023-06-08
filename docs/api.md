@@ -37,7 +37,7 @@
    :inherited-members:
 ```
 
-## dynamicpet.kineticmodel
+## dynamicpet.denoise
 
 ```{eval-rst}
 .. automodule:: dynamicpet.denoise.hypr
