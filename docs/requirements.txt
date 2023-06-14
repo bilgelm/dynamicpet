@@ -1,4 +1,4 @@
 furo==2023.5.20
 sphinx==6.2.1
 sphinx-click
-myst_parser==1.0.0
+myst_parser==2.0.0
