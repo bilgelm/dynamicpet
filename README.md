@@ -26,17 +26,23 @@
 [black]: https://github.com/psf/black
 
 _Dynamic PET_ is designed for voxelwise analysis of reconstructed dynamic
-positron emission tomography (PET) scans.
-_Dynamic PET_ also supports regional analysis.
-
-Methods implemented include:
-
-- Denoising
-  - HYPR-LR
-- Reference tissue-based kinetic modeling
-  - SRTM
+positron emission tomography (PET) scans, and also supports regional analysis.
 
 _Dynamic PET_ provides a command line interface (CLI) for easy image processing and also a Python API with greater flexibility.
+
+Methods implemented in the CLI include:
+
+- Denoising
+  - HighlY constrained backPRojection method constraining the backprojections to Local Regions of interest ([HYPR-LR])
+- Reference tissue-based modeling
+  - Standardized Uptake Value Ratio (SUVR)
+  - Simplified Reference Tissue Model (SRTM)
+
+Several implementations of estimating SRTM parameters are available:
+
+- Nonlinear optimization, as described by [Lammertsma and Hume, Neuroimage (1996)](https://doi.org/10.1006/nimg.1996.0066)
+- Two-step SRTM (SRTM2), as described by [Wu and Carson, J Cereb Blood Flow Metab (2002)](https://doi.org/10.1097/01.WCB.0000033967.83623.34)
+- Linear Regression with Spatial Constraint (LRSC), as described by [Zhou et al., Neuroimage (2003)](<https://doi.org/10.1016/S1053-8119(03)00017-X>)
 
 ## Requirements
 
@@ -48,6 +54,7 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 To run the `kinfitr` implementations of kinetic models, you will also need an
 installation of R and the [kinfitr] R package as well as the `rpy2` Python module.
 
+[hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
 [kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Installation
@@ -73,7 +80,7 @@ You will then need to create a binary mask that is in the same space as the PET 
 After installing _Dynamic PET_ as described above, execute:
 
 ```console
-$ kineticmodel PET REFMASK --model SRTMZhou2003 --outputdir <OUTPUTDIR> --fwhm 5
+$ kineticmodel PET --model SRTMZhou2003 --refmask <REFMASK> --outputdir <OUTPUTDIR> --fwhm 5
 ```
 
 where
@@ -86,7 +93,9 @@ Before running these commands, replace
 `<OPENNEURODATA>` with the path to the directory where you downloaded the data from OpenNeuro and
 `<OUTPUTDIR>` with path to the directory where you'd like to save the parametric images.
 
-_Note:_ Aside from SUVR and SRTMZhou2003, the remaining kinetic model implementations are very time consuming and are not recommended for imaging data.
+```{caution}
+Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model implementations are very time consuming and are not recommended for imaging data.
+```
 
 [openneuro]: https://openneuro.org
 

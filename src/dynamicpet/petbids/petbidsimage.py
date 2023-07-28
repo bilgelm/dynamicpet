@@ -13,9 +13,10 @@ from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalimage import image_maker
 from ..typing_utils import RealNumber
 from .petbidsjson import PetBidsJson
-from .petbidsjson import get_frametiming
+from .petbidsjson import get_frametiming_in_mins
 from .petbidsjson import read_json
 from .petbidsjson import update_frametiming_from
+from .petbidsjson import write_json
 from .petbidsobject import PETBIDSObject
 
 
@@ -40,7 +41,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
             img: a SpatialImage object with a 3-D or 4-D dataobj
             json_dict: PET-BIDS json dictionary
         """
-        frame_start, frame_duration = get_frametiming(json_dict)
+        frame_start, frame_duration = get_frametiming_in_mins(json_dict)
 
         super().__init__(img, frame_start, frame_duration)
 
@@ -114,6 +115,21 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
         return PETBIDSImage(corrected_img, self.json_dict)
+
+    def to_filename(self, filename: str | PathLike[str]) -> None:
+        """Save to file.
+
+        Args:
+            filename: file name for the PET image output
+        """
+        self.img.to_filename(filename)
+
+        fbase, fext = op.splitext(filename)
+        if fext == ".gz":
+            fbase = op.splitext(fbase)[0]
+        jsonfilename = fbase + ".json"
+
+        write_json(self.json_dict, jsonfilename)
 
 
 def load(

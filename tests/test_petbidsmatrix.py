@@ -1,11 +1,14 @@
 """Test cases for the PETBIDSMatrix class."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
 from dynamicpet.petbids import PETBIDSMatrix
 from dynamicpet.petbids.petbidsjson import PetBidsJson
+from dynamicpet.petbids.petbidsmatrix import load
 
 
 @pytest.fixture
@@ -41,3 +44,15 @@ def test_extract(pm: PETBIDSMatrix) -> None:
     assert extract_res.num_elements == pm.num_elements
     assert extract_res.start_time == start_time
     assert extract_res.end_time == end_time
+
+
+def test_file_io(pm: PETBIDSMatrix, tmp_path: Path) -> None:
+    """Test writing to file and reading it back."""
+    fname = tmp_path / "test.tsv"
+    pm.to_filename(fname)
+    pm2 = load(fname)
+
+    assert np.allclose(pm.frame_start, pm2.frame_start)
+    assert np.allclose(pm.frame_duration, pm.frame_duration)
+    assert pm.elem_names == pm2.elem_names
+    assert np.allclose(pm.dataobj, pm2.dataobj)

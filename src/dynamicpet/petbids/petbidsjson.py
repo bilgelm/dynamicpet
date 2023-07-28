@@ -9,11 +9,13 @@ It might be useful to make this into its own class in the future.
 import os.path as op
 import warnings
 from copy import deepcopy
+from json import dump as json_dump
 from json import load as json_load
 from os import PathLike
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import NotRequired
 from typing import Tuple
 from typing import TypedDict
 
@@ -44,12 +46,93 @@ HALFLIVES: Dict[str, float] = {
 class PetBidsJson(TypedDict):
     """PET-BIDS json dictionary."""
 
-    InjectionStart: float
+    TracerRadionuclide: str
+
     ScanStart: float
+    InjectionStart: float
     FrameTimesStart: List[float]
     FrameDuration: List[float]
 
-    TracerRadionuclide: str
+    # entries below are not needed for any function in this module, but some are
+    # required by the PET-BIDS standard
+    # these tags are included below to make typeguard happy when running tests
+    # using files downloaded from OpenNeuro
+
+    # Scanner Hardware tags
+    Manufacturer: NotRequired[str]
+    ManufacturersModelName: NotRequired[str]
+    Units: NotRequired[str]
+    InstitutionName: NotRequired[str]
+    InstitutionAddress: NotRequired[str]
+    InstitutionalDepartmentName: NotRequired[str]
+    BodyPart: NotRequired[str]
+
+    # Radiochemistry tags
+    TracerName: NotRequired[str]
+    InjectedRadioactivity: NotRequired[float]
+    InjectedRadioactivityUnits: NotRequired[str]
+    InjectedMass: NotRequired[float | None]
+    InjectedMassUnits: NotRequired[str | None]
+    SpecificRadioactivity: NotRequired[float | None]
+    SpecificRadioactivityUnits: NotRequired[str | None]
+    ModeOfAdministration: NotRequired[str]
+    TracerRadLex: NotRequired[str]
+    TracerSNOMED: NotRequired[str]
+    TracerMolecularWeight: NotRequired[float]
+    TracerMolecularWeightUnits: NotRequired[str]
+    InjectedMassPerWeight: NotRequired[float]
+    InjectedMassPerWeightUnits: NotRequired[str]
+    SpecificRadioactivityMeasTime: NotRequired[str]
+    MolarActivity: NotRequired[float]
+    MolarActivityUnits: NotRequired[str]
+    MolarActivityMeasTime: NotRequired[str]
+    InfusionRadioactivity: NotRequired[float]
+    InfusionStart: NotRequired[float]
+    InfusionSpeed: NotRequired[float]
+    InfusionSpeedUnits: NotRequired[str]
+    InjectedVolume: NotRequired[float]
+    Purity: NotRequired[float]
+
+    # Pharmaceuticals tags
+    PharmaceuticalName: NotRequired[str]
+    PharmaceuticalDoseAmount: NotRequired[float | List[float]]
+    PharmaceuticalDoseUnits: NotRequired[str]
+    PharmaceuticalDoseRegimen: NotRequired[str]
+    PharmaceuticalDoseTime: NotRequired[float | List[float]]
+    Anaesthesia: NotRequired[str]
+
+    # Time tags
+    TimeZero: NotRequired[str]
+    InjectionEnd: NotRequired[float]
+    ScanDate: NotRequired[str]  # DEPRECATED
+
+    # Reconstruction tags
+    AcquisitionMode: NotRequired[str]
+    ImageDecayCorrected: NotRequired[bool]
+    ImageDecayCorrectionTime: NotRequired[float]
+    ReconMethodName: NotRequired[str]
+    ReconMethodParameterLabels: NotRequired[List[str]]
+    ReconMethodParameterUnits: NotRequired[List[str]]
+    ReconMethodParameterValues: NotRequired[List[float]]
+    ReconFilterType: NotRequired[str | List[str]]
+    ReconFilterSize: NotRequired[float | List[float]]
+    AttenuationCorrection: NotRequired[str]
+    ReconMethodImplementationVersion: NotRequired[str]
+    AttenuationCorrectionMethodReference: NotRequired[str]
+    ScaleFactor: NotRequired[List[float]]
+    ScatterFraction: NotRequired[List[float]]
+    DecayCorrectionFactor: NotRequired[List[float]]
+    DoseCalibrationFactor: NotRequired[float]
+    PromptRate: NotRequired[List[float]]
+    SinglesRate: NotRequired[List[float]]
+    RandomRate: NotRequired[List[float]]
+
+    # Task tags
+    CogPOID: NotRequired[str]
+    CogAtlasID: NotRequired[str]
+    TaskDescription: NotRequired[str]
+    Instructions: NotRequired[str]
+    TaskName: NotRequired[str]
 
 
 def update_frametiming_from(
@@ -71,7 +154,7 @@ def update_frametiming_from(
     return new_json_dict
 
 
-def get_frametiming(
+def get_frametiming_in_mins(
     json_dict: PetBidsJson,
 ) -> Tuple[NDArray[np.double], NDArray[np.double]]:
     """Get frame timing information, in minutes, from PET-BIDS json.
@@ -148,3 +231,14 @@ def read_json(jsonfilename: str | PathLike[str]) -> PetBidsJson:
     with open(jsonfilename) as f:
         json_dict: PetBidsJson = json_load(f)
         return json_dict
+
+
+def write_json(json_dict: PetBidsJson, filename: str | PathLike[str]) -> None:
+    """Write dictionary to a json file.
+
+    Args:
+        json_dict: PET BIDS json dictionary
+        filename: file name for the output
+    """
+    with open(filename, "w") as f:
+        json_dump(json_dict, f)

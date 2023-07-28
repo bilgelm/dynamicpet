@@ -1,4 +1,5 @@
 """Test cases for the PETBIDSImage class."""
+from pathlib import Path
 from typing import Callable
 from typing import Generator
 
@@ -10,9 +11,9 @@ from pytest_mock import MockerFixture
 
 from dynamicpet.denoise import hypr
 from dynamicpet.petbids import PETBIDSImage
-from dynamicpet.petbids import load
+from dynamicpet.petbids.petbidsimage import load
 from dynamicpet.petbids.petbidsjson import PetBidsJson
-from dynamicpet.petbids.petbidsjson import get_frametiming
+from dynamicpet.petbids.petbidsjson import get_frametiming_in_mins
 
 
 @pytest.fixture
@@ -55,7 +56,7 @@ def img(json_dict: PetBidsJson) -> Nifti1Image:
     dvr = 1.2
     k2 = 1.1  # 1/minute
 
-    frame_start, frame_duration = get_frametiming(json_dict)
+    frame_start, frame_duration = get_frametiming_in_mins(json_dict)
     frame_end = frame_start + frame_duration
 
     c_ref = np.array([0, 100, 200, 160, 140, 120, 120], dtype=np.float64)
@@ -298,3 +299,14 @@ def test_decay_uncorrect_correct(ti: PETBIDSImage) -> None:
 def test_hypr_lr(ti: PETBIDSImage) -> None:
     """Test HYPR-LR."""
     hypr.hypr_lr(ti, fwhm=3)
+
+
+def test_file_io(ti: PETBIDSImage, tmp_path: Path) -> None:
+    """Test writing to file and reading it back."""
+    fname = tmp_path / "test.nii.gz"
+    ti.to_filename(fname)
+    ti2 = load(fname)
+
+    assert np.allclose(ti.frame_start, ti2.frame_start)
+    assert np.allclose(ti.frame_duration, ti.frame_duration)
+    assert np.allclose(ti.dataobj, ti2.dataobj)

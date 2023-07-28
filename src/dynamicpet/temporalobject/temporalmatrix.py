@@ -1,5 +1,7 @@
 """TemporalMatrix class."""
 
+from typing import List
+
 import numpy as np
 
 from ..typing_utils import NumpyRealNumberArray
@@ -17,11 +19,13 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         dataobj: vector or k x num_frames matrix
         frame_start: vector containing the start times of each frame
         frame_duration: vector containing the durations of each frame
+        elem_names: [optional] list of k element names
 
     Attributes:
         _dataobj: 1 x num_frames vector or k x num_frames matrix
         frame_start: vector containing the start times of each frame
         frame_duration: vector containing the durations of each frame
+        elem_names: list of k element names
     """
 
     _dataobj: NumpyRealNumberArray
@@ -31,6 +35,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         dataobj: NumpyRealNumberArray,
         frame_start: NumpyRealNumberArray,
         frame_duration: NumpyRealNumberArray,
+        elem_names: List[str] | None = None,
     ) -> None:
         """Matrix with corresponding time frame information.
 
@@ -38,6 +43,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             dataobj: vector or k x num_frames matrix
             frame_start: vector containing the start times of each frame
             frame_duration: vector containing the durations of each frame
+            elem_names: [optional] list of k element names
 
         Raises:
             ValueError: empty dataobj
@@ -59,17 +65,34 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         else:
             raise ValueError("dataobj must be a 1- or 2-D")
 
-        if not self._dataobj.shape[1] == len(self.frame_start):
+        num_frames = len(self.frame_start)
+        if not self._dataobj.shape[1] == num_frames:
             raise TimingError(
-                f"2nd dimension of matrix ({self._dataobj.shape[1]}) must "
-                f"match the number of columns ({len(self.frame_start)}) in "
-                "frame timing information"
+                f"2nd dimension of matrix ({self._dataobj.shape[1]}) must match "
+                f"the length of frame timing ({num_frames})"
+            )
+
+        k = self._dataobj.shape[0]
+        if elem_names is None:
+            self.elem_names = [str(i) for i in range(k)]
+        elif len(elem_names) == k:
+            self.elem_names = elem_names
+        else:
+            raise ValueError(
+                f"length of elem_names must match the number of dataobj rows ({k})"
             )
 
     @property
     def dataobj(self) -> NumpyRealNumberArray:
         """Get data object."""
         return self._dataobj
+
+    def get_elem(self, elem: str) -> "TemporalMatrix":
+        """Get timeseries data for a specific element."""
+        i = self.elem_names.index(elem)
+        return TemporalMatrix(
+            self.dataobj[i], self.frame_start, self.frame_duration, [elem]
+        )
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "TemporalMatrix":
         """Extract a temporally shorter TemporalMatrix from a TemporalMatrix.
@@ -89,6 +112,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             extracted_matrix,
             self.frame_start[start_index:end_index],
             self.frame_duration[start_index:end_index],
+            self.elem_names,
         )
 
     def dynamic_mean(
@@ -124,6 +148,8 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         Raises:
             TimingError: TemporalMatrices have temporal overlap or
                          TemporalMatrix being concatenated is earlier in time
+            ValueError: TemporalMatrix being concatenated has different element
+                        names
         """
         if self.overlap_with(other) != []:
             raise TimingError(
@@ -133,11 +159,16 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             raise TimingError(
                 "TemporalMatrix being concatenated occurs earlier in time"
             )
+        if self.elem_names != other.elem_names:
+            raise ValueError(
+                "TemporalMatrix being concatenated has different element names"
+            )
 
         concat_res = TemporalMatrix(
             np.concatenate([self.dataobj, other.dataobj], axis=1),
             np.concatenate([self.frame_start, other.frame_start]),
             np.concatenate([self.frame_duration, other.frame_duration]),
+            self.elem_names,
         )
 
         return concat_res
@@ -165,8 +196,6 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             raise ValueError("Binary mask is incompatible with data")
 
         tacs = TemporalMatrix(
-            dataobj,
-            self.frame_start,
-            self.frame_duration,
+            dataobj, self.frame_start, self.frame_duration, self.elem_names
         )
         return tacs
