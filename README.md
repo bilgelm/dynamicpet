@@ -1,4 +1,4 @@
-# Dynamic PET
+# Dynamic PET <img src="docs/logo.png" align="right" height="150" />
 
 <!-- [![PyPI](https://img.shields.io/pypi/v/dynamicpet.svg)][pypi_]
 [![Status](https://img.shields.io/pypi/status/dynamicpet.svg)][status]
