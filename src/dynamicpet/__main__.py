@@ -2,8 +2,6 @@
 import csv
 import os
 import warnings
-from typing import Tuple
-from typing import Union
 
 import click
 import numpy as np
@@ -12,7 +10,7 @@ from nibabel.loadsave import load as nib_load
 from nibabel.spatialimages import SpatialImage
 
 from dynamicpet.denoise import hypr
-from dynamicpet.kineticmodel import kinfitr
+from dynamicpet.kineticmodel.kineticmodel import KineticModel
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
@@ -32,9 +30,6 @@ IMPLEMENTED_KMS = [
     "SRTMZhou2003",
     "kinfitr.SRTM",
     "kinfitr.SRTM2",
-]
-IMPLEMENTED_KM_TYPES = Union[
-    SUVR, SRTMLammertsma1996, SRTMZhou2003, kinfitr.SRTM, kinfitr.SRTM2
 ]
 
 INTEGRATION_TYPES = (
@@ -204,7 +199,7 @@ def kineticmodel(
         reftac = reftac.extract(start, end)
 
     # fit kinetic model
-    km: IMPLEMENTED_KM_TYPES
+    km: KineticModel
     match model:
         case "suvr":
             km = SUVR(reftac, pet_img)
@@ -221,8 +216,12 @@ def kineticmodel(
                 fwhm=fwhm,
             )
         case "kinfitr.srtm":
+            from dynamicpet.kineticmodel import kinfitr
+
             km = kinfitr.SRTM(reftac, pet_img)
         case "kinfitr.srtm2":
+            from dynamicpet.kineticmodel import kinfitr
+
             km = kinfitr.SRTM2(reftac, pet_img)
         case _:
             raise ValueError(f"Model {model} is not supported")
@@ -261,7 +260,7 @@ def parse_kineticmodel_inputs(
     refroi: str | None = None,
     refmask: str | None = None,
     petmask: str | None = None,
-) -> Tuple[PETBIDSImage | PETBIDSMatrix, TemporalMatrix, NumpyRealNumberArray | None]:
+) -> tuple[PETBIDSImage | PETBIDSMatrix, TemporalMatrix, NumpyRealNumberArray | None]:
     """Parse kinetic model inputs.
 
     Args:

@@ -44,6 +44,8 @@ Several implementations of estimating SRTM parameters are available:
 - Two-step SRTM (SRTM2), as described by [Wu and Carson, J Cereb Blood Flow Metab (2002)](https://doi.org/10.1097/01.WCB.0000033967.83623.34)
 - Linear Regression with Spatial Constraint (LRSC), as described by [Zhou et al., Neuroimage (2003)](<https://doi.org/10.1016/S1053-8119(03)00017-X>)
 
+[hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
+
 ## Requirements
 
 _Dynamic PET_ requires Python 3.11+ and the following modules:
@@ -54,7 +56,6 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 To run the `kinfitr` implementations of kinetic models, you will also need an
 installation of R and the [kinfitr] R package as well as the `rpy2` Python module.
 
-[hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
 [kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Installation
@@ -65,6 +66,19 @@ You can install _Dynamic PET_ via [pip] after cloning the repository:
 $ git clone https://github.com/bilgelm/dynamicpet.git
 $ pip install -e dynamicpet
 ```
+
+If you would like to use kinetic models implemented in `kinfitr` with
+_Dynamic PET_, first [install R](https://cran.r-project.org)
+and the [kinfitr] R package.
+Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git` 
+repository as descibed above:
+
+```console
+$ pip install -e dynamicpet[kinfitr]
+```
+
+
+[kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Usage
 
@@ -93,7 +107,7 @@ Before running these commands, replace
 `<OPENNEURODATA>` with the path to the directory where you downloaded the data from OpenNeuro and
 `<OUTPUTDIR>` with path to the directory where you'd like to save the parametric images.
 
-```{caution}
+```{warning}
 Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model implementations are very time consuming and are not recommended for imaging data.
 ```
 
