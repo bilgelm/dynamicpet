@@ -4,14 +4,26 @@ updates:
     directory: "/"
     schedule:
       interval: daily
+    labels:
+      - "dependencies"
+      - "github_actions"
+    open-pull-requests-limit: 99
   - package-ecosystem: pip
     directory: "/.github/workflows"
     schedule:
       interval: daily
+    labels:
+      - "dependencies"
+      - "python"
+    open-pull-requests-limit: 99
   - package-ecosystem: pip
     directory: "/docs"
     schedule:
       interval: daily
+    labels:
+      - "dependencies"
+      - "python"
+    open-pull-requests-limit: 99
   - package-ecosystem: pip
     directory: "/"
     schedule:

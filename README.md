@@ -70,13 +70,12 @@ $ pip install -e dynamicpet
 If you would like to use kinetic models implemented in `kinfitr` with
 _Dynamic PET_, first [install R](https://cran.r-project.org)
 and the [kinfitr] R package.
-Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git` 
+Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git`
 repository as descibed above:
 
 ```console
 $ pip install -e dynamicpet[kinfitr]
 ```
-
 
 [kinfitr]: https://github.com/mathesong/kinfitr
 
