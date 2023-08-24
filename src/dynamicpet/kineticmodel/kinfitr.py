@@ -1,8 +1,6 @@
 """Wrapper for kinfitr."""
 
 from abc import ABC
-from typing import List
-from typing import Union
 
 import numpy as np
 from rpy2.robjects import default_converter  # type: ignore
@@ -29,14 +27,14 @@ class KinfitrModel(KineticModel, ABC):
         return cls.__name__.lower()
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp", "R1", "k2"]
 
     def fit(
         self,
         mask: NumpyRealNumberArray | None = None,
-        **kwargs: Union[NumpyRealNumberArray, float]
+        **kwargs: NumpyRealNumberArray | float
     ) -> None:
         """Estimate model parameters.
 
@@ -77,7 +75,7 @@ class FRTM(KinfitrModel):
     """kinfitr frtm wrapper."""
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp", "R1", "k2", "k3", "k4"]
 
@@ -92,7 +90,7 @@ class SRTM2(KinfitrModel):
     """kinfitr srtm2 wrapper."""
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp", "R1", "k2", "k2a"]
 
@@ -101,7 +99,7 @@ class MRTM1(KinfitrModel):
     """kinfitr mrtm1 wrapper."""
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp", "k2prime", "R1", "k2"]
 
@@ -125,7 +123,7 @@ class RefLogan(KinfitrModel):
         return "refLogan"
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp"]
 

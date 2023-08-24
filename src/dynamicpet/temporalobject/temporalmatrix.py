@@ -1,7 +1,5 @@
 """TemporalMatrix class."""
 
-from typing import List
-
 import numpy as np
 
 from ..typing_utils import NumpyRealNumberArray
@@ -35,7 +33,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         dataobj: NumpyRealNumberArray,
         frame_start: NumpyRealNumberArray,
         frame_duration: NumpyRealNumberArray,
-        elem_names: List[str] | None = None,
+        elem_names: list[str] | None = None,
     ) -> None:
         """Matrix with corresponding time frame information.
 

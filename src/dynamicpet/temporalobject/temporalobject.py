@@ -5,9 +5,7 @@ from abc import ABC
 from abc import abstractmethod
 from typing import Any
 from typing import Generic
-from typing import List
 from typing import Literal
-from typing import Tuple
 from typing import TypeVar
 
 import numpy as np
@@ -39,7 +37,7 @@ class TemporalObject(Generic[T], ABC):
     frame_duration: NumpyRealNumberArray
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Get shape of dataobj."""
         return self.dataobj.shape
 
@@ -79,7 +77,7 @@ class TemporalObject(Generic[T], ABC):
 
     def get_idx_extract_time(
         self, start_time: RealNumber, end_time: RealNumber
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Get the start and end indices for extracting a time interval.
 
         Args:
@@ -168,7 +166,7 @@ class TemporalObject(Generic[T], ABC):
 
         return start_index, end_index
 
-    def overlap_with(self, other: T) -> List[Tuple[RealNumber, RealNumber]]:
+    def overlap_with(self, other: T) -> list[tuple[RealNumber, RealNumber]]:
         """Determine temporal overlap with another TemporalObject of same type.
 
         This is an overlap finding problem in a set of line segments.
@@ -184,7 +182,7 @@ class TemporalObject(Generic[T], ABC):
         Returns:
             list of tuples listing frame start and end times.
         """
-        overlap_segs: List[Tuple[RealNumber, RealNumber]] = []
+        overlap_segs: list[tuple[RealNumber, RealNumber]] = []
         i = j = 0
         while i < self.num_frames and j < other.num_frames:
             s1 = self.frame_start[i]
@@ -251,7 +249,7 @@ class TemporalObject(Generic[T], ABC):
         """
         pass
 
-    def split(self, split_time: RealNumber) -> Tuple[T, T]:
+    def split(self, split_time: RealNumber) -> tuple[T, T]:
         """Split into two TemporalObjects, preserving total n of frames.
 
         Args:

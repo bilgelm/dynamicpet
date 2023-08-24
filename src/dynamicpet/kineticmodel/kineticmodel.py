@@ -2,8 +2,6 @@
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Dict
-from typing import List
 
 import numpy as np
 from nibabel.spatialimages import SpatialImage
@@ -31,11 +29,11 @@ class KineticModel(ABC):
 
     reftac: TemporalMatrix
     tacs: TemporalMatrix | TemporalImage
-    parameters: Dict[str, NumpyRealNumberArray]
+    parameters: dict[str, NumpyRealNumberArray]
 
     @classmethod
     @abstractmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         raise NotImplementedError
 
@@ -69,7 +67,7 @@ class KineticModel(ABC):
 
         self.reftac: TemporalMatrix = reftac
         self.tacs: TemporalMatrix | TemporalImage = tacs
-        self.parameters: Dict[str, NumpyRealNumberArray] = {}
+        self.parameters: dict[str, NumpyRealNumberArray] = {}
 
     @abstractmethod
     def fit(self) -> None:

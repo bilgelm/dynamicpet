@@ -1,7 +1,5 @@
 """Standardized update value ratio (SUVR)."""
 
-from typing import List
-
 import numpy as np
 
 from ..temporalobject.temporalimage import TemporalImage
@@ -20,7 +18,7 @@ class SUVR(KineticModel):
     """
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["suvr"]
 

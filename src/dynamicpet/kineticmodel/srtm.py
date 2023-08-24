@@ -1,8 +1,5 @@
 """Simplified reference tissue model (SRTM)."""
 
-from typing import List
-from typing import Tuple
-
 import numpy as np
 from nibabel.processing import smooth_image
 from nibabel.spatialimages import SpatialImage
@@ -31,7 +28,7 @@ class SRTMLammertsma1996(KineticModel):
     """
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return ["bp", "r1", "k2"]
 
@@ -155,7 +152,7 @@ class SRTMZhou2003(KineticModel):
     """
 
     @classmethod
-    def get_param_names(cls) -> List[str]:
+    def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return [
             "dvr",
@@ -174,7 +171,7 @@ class SRTMZhou2003(KineticModel):
         integration_type: INTEGRATION_TYPE_OPTS = "trapz",
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = "frame_duration",
         mask: NumpyRealNumberArray | None = None,
-        fwhm: RealNumber | List[RealNumber] | None = None,
+        fwhm: RealNumber | list[RealNumber] | None = None,
     ) -> None:
         """Estimate model parameters.
 
@@ -312,8 +309,8 @@ class SRTMZhou2003(KineticModel):
     def prep_refine_r1(
         self,
         mask: NumpyRealNumberArray | None = None,
-        fwhm: RealNumber | List[RealNumber] | None = None,
-    ) -> Tuple[NumpyRealNumberArray, ...]:
+        fwhm: RealNumber | list[RealNumber] | None = None,
+    ) -> tuple[NumpyRealNumberArray, ...]:
         """Refine R1.
 
         Args:

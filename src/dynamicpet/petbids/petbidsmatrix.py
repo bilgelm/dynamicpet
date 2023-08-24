@@ -4,7 +4,6 @@ import csv
 import os.path as op
 from copy import deepcopy
 from os import PathLike
-from typing import List
 
 import numpy as np
 
@@ -39,7 +38,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         self,
         dataobj: NumpyRealNumberArray,
         json_dict: PetBidsJson,
-        elem_names: List[str] | None = None,
+        elem_names: list[str] | None = None,
     ) -> None:
         """Matrix with corresponding PET-BIDS time frame information.
 

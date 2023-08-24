@@ -1,7 +1,5 @@
 """Test cases for the kineticmodel module using simulated data with ground truth."""
 from typing import Any
-from typing import List
-from typing import Tuple
 
 import numpy as np
 import pytest
@@ -114,7 +112,7 @@ def srtm_gen_ode_model(
     plasma_rate: float = -0.03,
     kref1: float = 1.0,
     kref2: float = 0.3,
-) -> List[Any]:
+) -> list[Any]:
     """Generative ODE model describing SRTM.
 
     Args:
@@ -150,7 +148,7 @@ def get_tacs_and_reftac_dataobj(
     frame_duration: NDArray[np.double],
     bp: float,
     r1: float,
-) -> Tuple[NDArray[np.double], NDArray[np.double]]:
+) -> tuple[NDArray[np.double], NDArray[np.double]]:
     """Get digitized TACs."""
     frame_end = frame_start + frame_duration
 

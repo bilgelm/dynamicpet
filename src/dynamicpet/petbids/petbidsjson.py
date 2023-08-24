@@ -13,10 +13,7 @@ from json import dump as json_dump
 from json import load as json_load
 from os import PathLike
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import NotRequired
-from typing import Tuple
 from typing import TypedDict
 
 import numpy as np
@@ -27,7 +24,7 @@ from ..temporalobject.temporalobject import TemporalObject
 
 # radionuclide halflives in seconds
 # turkupetcentre.net/petanalysis/decay.html
-HALFLIVES: Dict[str, float] = {
+HALFLIVES: dict[str, float] = {
     "c11": 1224,
     "n13": 599,
     "o15": 123,
@@ -50,8 +47,8 @@ class PetBidsJson(TypedDict):
 
     ScanStart: float
     InjectionStart: float
-    FrameTimesStart: List[float]
-    FrameDuration: List[float]
+    FrameTimesStart: list[float]
+    FrameDuration: list[float]
 
     # entries below are not needed for any function in this module, but some are
     # required by the PET-BIDS standard
@@ -95,10 +92,10 @@ class PetBidsJson(TypedDict):
 
     # Pharmaceuticals tags
     PharmaceuticalName: NotRequired[str]
-    PharmaceuticalDoseAmount: NotRequired[float | List[float]]
+    PharmaceuticalDoseAmount: NotRequired[float | list[float]]
     PharmaceuticalDoseUnits: NotRequired[str]
     PharmaceuticalDoseRegimen: NotRequired[str]
-    PharmaceuticalDoseTime: NotRequired[float | List[float]]
+    PharmaceuticalDoseTime: NotRequired[float | list[float]]
     Anaesthesia: NotRequired[str]
 
     # Time tags
@@ -111,21 +108,21 @@ class PetBidsJson(TypedDict):
     ImageDecayCorrected: NotRequired[bool]
     ImageDecayCorrectionTime: NotRequired[float]
     ReconMethodName: NotRequired[str]
-    ReconMethodParameterLabels: NotRequired[List[str]]
-    ReconMethodParameterUnits: NotRequired[List[str]]
-    ReconMethodParameterValues: NotRequired[List[float]]
-    ReconFilterType: NotRequired[str | List[str]]
-    ReconFilterSize: NotRequired[float | List[float]]
+    ReconMethodParameterLabels: NotRequired[list[str]]
+    ReconMethodParameterUnits: NotRequired[list[str]]
+    ReconMethodParameterValues: NotRequired[list[float]]
+    ReconFilterType: NotRequired[str | list[str]]
+    ReconFilterSize: NotRequired[float | list[float]]
     AttenuationCorrection: NotRequired[str]
     ReconMethodImplementationVersion: NotRequired[str]
     AttenuationCorrectionMethodReference: NotRequired[str]
-    ScaleFactor: NotRequired[List[float]]
-    ScatterFraction: NotRequired[List[float]]
-    DecayCorrectionFactor: NotRequired[List[float]]
+    ScaleFactor: NotRequired[list[float]]
+    ScatterFraction: NotRequired[list[float]]
+    DecayCorrectionFactor: NotRequired[list[float]]
     DoseCalibrationFactor: NotRequired[float]
-    PromptRate: NotRequired[List[float]]
-    SinglesRate: NotRequired[List[float]]
-    RandomRate: NotRequired[List[float]]
+    PromptRate: NotRequired[list[float]]
+    SinglesRate: NotRequired[list[float]]
+    RandomRate: NotRequired[list[float]]
 
     # Task tags
     CogPOID: NotRequired[str]
@@ -156,7 +153,7 @@ def update_frametiming_from(
 
 def get_frametiming_in_mins(
     json_dict: PetBidsJson,
-) -> Tuple[NDArray[np.double], NDArray[np.double]]:
+) -> tuple[NDArray[np.double], NDArray[np.double]]:
     """Get frame timing information, in minutes, from PET-BIDS json.
 
     PET-BIDS json must be in the 2020 format with the following tags:

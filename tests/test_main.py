@@ -3,7 +3,6 @@
 import csv
 import os
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 import pytest
@@ -16,7 +15,7 @@ from dynamicpet.temporalobject.temporalimage import image_maker
 
 
 @pytest.fixture(scope="session")
-def images(tmp_path_factory: pytest.TempPathFactory) -> Dict[str, Path]:
+def images(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     """Download test files from OpenNeuro."""
     outdir = tmp_path_factory.getbasetemp()
     rois_fname = outdir / "displacementROI_dseg.nii.gz"
@@ -98,7 +97,7 @@ def images(tmp_path_factory: pytest.TempPathFactory) -> Dict[str, Path]:
     return fnames
 
 
-def test_denoise(images: Dict[str, Path]) -> None:
+def test_denoise(images: dict[str, Path]) -> None:
     """Test denoise in __main__.py."""
     from dynamicpet.__main__ import denoise
 
@@ -114,7 +113,7 @@ def test_denoise(images: Dict[str, Path]) -> None:
     assert os.path.isfile(pet_fname.parent / "pet_hyprlr.json")
 
 
-def test_kineticmodel_suvr(images: Dict[str, Path]) -> None:
+def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
     """Test SUVR kineticmodel in __main__.py."""
     from dynamicpet.__main__ import kineticmodel
 
