@@ -220,6 +220,13 @@ def test_dynamic_mean_custom_weighted(tm: TemporalMatrix) -> None:
     assert tm.dynamic_mean(weight_by=weights) == tm.dataobj[:, -1]
 
 
+def test_dynamic_mean_trapz(tm: TemporalMatrix) -> None:
+    """Test trapezoidal integration based dynamic mean."""
+    assert np.allclose(tm.dynamic_mean(integration_type="trapz"),
+                       tm.dynamic_mean(weight_by="frame_duration"),
+                       rtol=.03)
+
+
 def test_cumulative_integral(tm: TemporalMatrix) -> None:
     """Test cumulative integral."""
     res = tm.cumulative_integral(integration_type="rect")

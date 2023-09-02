@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 from ..typing_utils import NumpyRealNumberArray
 from ..typing_utils import RealNumber
 from .temporalmatrix import TemporalMatrix
+from .temporalobject import INTEGRATION_TYPE_OPTS
 from .temporalobject import WEIGHT_OPTS
 from .temporalobject import TemporalObject
 from .temporalobject import TimingError
@@ -119,6 +120,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
     def dynamic_mean(
         self,
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        integration_type: INTEGRATION_TYPE_OPTS = "rect",
     ) -> SpatialImage:
         """Compute the (weighted) dynamic mean over time.
 
@@ -127,13 +129,12 @@ class TemporalImage(TemporalObject["TemporalImage"]):
                        If weight_by == 'frame_duration', each frame is weighted
                        proportionally to its duration (inverse variance weighting).
                        If weight_by is a 1-D array, then specified values are used.
+            integration_type: rect (rectangular) or trapz (trapezoidal).
 
         Returns:
             3-D image that is the weighted temporal average
         """
-        dyn_mean: NumpyRealNumberArray = np.average(
-            self.dataobj, axis=-1, weights=self.get_weights(weight_by)
-        )
+        dyn_mean = self._dynamic_mean(weight_by, integration_type)
 
         # Create a SpatialImage of the same class as self.img
         # image_maker = self.img.__class__

@@ -294,6 +294,49 @@ class TemporalObject(Generic[T], ABC):
             raise ValueError("Weights should be None, frame_duration, or a numpy array")
         return delta
 
+    def _dynamic_mean(
+        self,
+        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        integration_type: INTEGRATION_TYPE_OPTS = "rect",
+    ) -> NumpyRealNumberArray:
+        """Compute the (weighted) dynamic mean over time.
+
+        Args:
+            weight_by: If weight_by == None, each frame is weighted equally.
+                       If weight_by == 'frame_duration', each frame is weighted
+                       proportionally to its duration (inverse variance weighting).
+                       If weight_by is a 1-D array, then specified values are used.
+            integration_type: rect (rectangular) or trapz (trapezoidal).
+
+        Returns:
+            a 1-D array of weighted temporal averages
+
+        Raises:
+            ValueError: invalid integration type
+        """
+        dyn_mean: NumpyRealNumberArray
+        if integration_type == "rect":
+            dyn_mean = np.average(
+                self.dataobj, axis=-1, weights=self.get_weights(weight_by)
+            )
+        elif integration_type == "trapz":
+            if weight_by:
+                warnings.warn(
+                    (
+                        "When calculating dynamic mean using trapezoidal integration, "
+                        "weight_by option is ignored."
+                    ),
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+            dyn_mean = np.trapz(self.dataobj, self.frame_mid) / (
+                self.frame_mid[-1] - self.frame_mid[0]
+            )
+        else:
+            raise ValueError("integration_type" + integration_type + "is invalid")
+
+        return dyn_mean
+
     def cumulative_integral(
         self, integration_type: INTEGRATION_TYPE_OPTS = "trapz"
     ) -> NumpyRealNumberArray:

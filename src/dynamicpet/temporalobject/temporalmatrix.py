@@ -4,6 +4,7 @@ import numpy as np
 
 from ..typing_utils import NumpyRealNumberArray
 from ..typing_utils import RealNumber
+from .temporalobject import INTEGRATION_TYPE_OPTS
 from .temporalobject import WEIGHT_OPTS
 from .temporalobject import TemporalObject
 from .temporalobject import TimingError
@@ -116,6 +117,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
     def dynamic_mean(
         self,
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        integration_type: INTEGRATION_TYPE_OPTS = "rect",
     ) -> NumpyRealNumberArray:
         """Compute the (weighted) dynamic mean over time.
 
@@ -124,15 +126,12 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
                        If weight_by == 'frame_duration', each frame is weighted
                        proportionally to its duration (inverse variance weighting).
                        If weight_by is a 1-D array, then specified values are used.
+            integration_type: rect (rectangular) or trapz (trapezoidal).
 
         Returns:
             a 1-D array of weighted temporal averages
         """
-        dyn_mean: NumpyRealNumberArray = np.average(
-            self.dataobj, axis=-1, weights=self.get_weights(weight_by)
-        )
-
-        return dyn_mean
+        return self._dynamic_mean(weight_by, integration_type)
 
     def concatenate(self, other: "TemporalMatrix") -> "TemporalMatrix":
         """Concatenate a TemporalMatrix at the end (in time).
