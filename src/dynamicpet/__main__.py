@@ -48,19 +48,21 @@ WEIGHTS = str(WEIGHT_OPTS).replace("'", "").split("[")[1].split("]")[0].split(",
     help="Name of denoising method",
 )
 @click.option(
-    "--output",
+    "--outputdir",
     default=None,
     type=str,
     help=(
-        "File to save denoised image. If not provided, it will be saved in the "
-        "same directory as the PET image with '_<method>' suffix."
+        "Directory in which to save denoised image. "
+        "If not provided, it will be saved in the same directory as the PET image."
     ),
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
 def denoise(
-    pet: str, fwhm: float, method: str, output: str | None, json: str | None
+    pet: str, fwhm: float, method: str, outputdir: str | None, json: str | None
 ) -> None:
     """Perform dynamic PET denoising.
+
+    Outputs will have a '_<method>' suffix.
 
     PET: 4-D PET image
 
@@ -74,9 +76,12 @@ def denoise(
     else:
         raise NotImplementedError(f"Denoising method {method} is not supported")
 
-    if output is None:
-        froot, ext, addext = splitext_addext(pet)
-        output = froot + "_hyprlr" + ext + addext
+    froot, ext, addext = splitext_addext(pet)
+    if outputdir:
+        os.makedirs(outputdir, exist_ok=True)
+        bname = os.path.basename(froot)
+        froot = os.path.join(outputdir, bname)
+    output = froot + "_hyprlr" + ext + addext
     res.to_filename(output)
 
 
@@ -113,8 +118,7 @@ def denoise(
     type=str,
     help=(
         "Directory in which to save each estimated parametric image. "
-        "If not provided, they will be saved in the same directory as the PET image. "
-        "Outputs will have a '_<model>_<parameter>' suffix."
+        "If not provided, they will be saved in the same directory as the PET image."
     ),
 )
 @click.option(
@@ -180,6 +184,8 @@ def kineticmodel(
 ) -> None:
     """Fit a reference tissue model to a dynamic PET image or TACs.
 
+    Outputs will have a '_km-<model>_kp-<parameter>' suffix.
+
     PET: 4-D PET image (can be 3-D if model is SUVR) or a 2-D tabular TACs tsv file
     """
     model = model.lower()
@@ -226,7 +232,8 @@ def kineticmodel(
         case _:
             raise ValueError(f"Model {model} is not supported")
 
-    if outputdir is not None:
+    if outputdir:
+        os.makedirs(outputdir, exist_ok=True)
         bname = os.path.basename(froot)
         froot = os.path.join(outputdir, bname)
 
