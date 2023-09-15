@@ -222,9 +222,11 @@ def test_dynamic_mean_custom_weighted(tm: TemporalMatrix) -> None:
 
 def test_dynamic_mean_trapz(tm: TemporalMatrix) -> None:
     """Test trapezoidal integration based dynamic mean."""
-    assert np.allclose(tm.dynamic_mean(integration_type="trapz"),
-                       tm.dynamic_mean(weight_by="frame_duration"),
-                       rtol=.03)
+    assert np.allclose(
+        tm.dynamic_mean(integration_type="trapz"),
+        tm.dynamic_mean(weight_by="frame_duration"),
+        rtol=0.03,
+    )
 
 
 def test_cumulative_integral(tm: TemporalMatrix) -> None:

@@ -135,7 +135,7 @@ class KineticModel(ABC):
             mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   the kinetic model was fitted. Elements outside the mask will
-                  be set to to NA in parametric outputs.
+                  be set to to 0 in parametric outputs.
         """
         # if param_name not in self.__class__.get_param_names():
         #     raise ValueError("No such parameter defined for kinetic model")
@@ -147,8 +147,8 @@ class KineticModel(ABC):
             else:
                 self.parameters[param_name] = param
         else:
-            tmp = np.empty_like(self.tacs.dataobj[..., 0])
-            tmp[mask.astype("bool")] = param
+            tmp = np.zeros_like(self.tacs.dataobj[..., 0])
+            tmp.flat[mask.astype("bool").flatten()] = param
             self.parameters[param_name] = tmp
 
     @abstractmethod
