@@ -48,7 +48,7 @@ class SRTMLammertsma1996(KineticModel):
             mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   to fit the kinetic model. Elements outside the mask will
-                  be set to to NA in parametric estimate outputs.
+                  be set to to 0 in parametric estimate outputs.
         """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
         num_elements = tacs.num_elements
@@ -59,17 +59,17 @@ class SRTMLammertsma1996(KineticModel):
         bp = np.zeros((num_elements, 1))
         r1 = np.zeros((num_elements, 1))
         k2 = np.zeros((num_elements, 1))
-        for i in trange(num_elements):
+        for k in trange(num_elements):
             init_guess = (1.5, 1.0, 0.1)
             popt, _ = curve_fit(
                 srtm_model,
                 self.reftac,
-                roitacs[i, :].flatten(),
+                roitacs[k, :].flatten(),
                 init_guess,
                 sigma=weights,
                 bounds=([0, 0, 0], [15, 10, 1]),
             )
-            bp[i], r1[i], k2[i] = popt
+            bp[k], r1[k], k2[k] = popt
 
         self.set_parameter("bp", bp, mask)
         self.set_parameter("r1", r1, mask)
@@ -187,7 +187,7 @@ class SRTMZhou2003(KineticModel):
             mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   to fit the kinetic model. Elements outside the mask will
-                  be set to to NA in parametric estimate outputs.
+                  be set to to 0 in parametric estimate outputs.
             fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
         """
         # get reference TAC as a 1-D vector
@@ -227,6 +227,17 @@ class SRTMZhou2003(KineticModel):
         for k in trange(num_elements):
             # get TAC and its cumulative integral as 1-D vectors
             tac = tacs_mat[k, :][:, np.newaxis]
+
+            # special case when tac is the same as reftac
+            if np.allclose(tac, reftac):
+                dvr[k] = 1
+                r1[k] = 1
+                k2[k] = np.nan
+                k2a[k] = np.nan
+                # noise_vars are 0 in this case as there is no error
+                # since default is already 0, no need to specify
+                continue
+
             int_tac = int_tacs_mat[k, :][:, np.newaxis]
 
             # ----- Get DVR -----
@@ -317,7 +328,7 @@ class SRTMZhou2003(KineticModel):
             mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   to fit the kinetic model. Elements outside the mask will
-                  be set to to NA in parametric estimate outputs.
+                  be set to to 0 in parametric estimate outputs.
             fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
 
         Returns:
