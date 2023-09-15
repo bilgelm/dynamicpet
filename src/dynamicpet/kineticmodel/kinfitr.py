@@ -42,7 +42,7 @@ class KinfitrModel(KineticModel, ABC):
             mask: [optional] A 1-D (for TemporalMatrix TACs) or
                   3-D (for TemporalImage TACs) binary mask that defines where
                   to fit the kinetic model. Elements outside the mask will
-                  be set to to NA in parametric estimate outputs.
+                  be set to to 0 in parametric estimate outputs.
             kwargs: optional arguments for the kinfitr function
         """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
