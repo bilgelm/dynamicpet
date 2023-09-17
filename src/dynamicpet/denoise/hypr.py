@@ -33,10 +33,9 @@ def hypr_lr(ti: PETBIDSImage, fwhm: float) -> PETBIDSImage:
     # convolve both ti and weighted average by a low-pass filter (3D boxcar)
     ixf: SpatialImage = smooth_image(i.img, fwhm)  # type: ignore
     i_cxf: SpatialImage = smooth_image(i_c, fwhm)  # type: ignore
-    # ixf = uniform_filter(ti.img, size=(size, size, size, 1), mode='nearest')
-    # i_cxf = uniform_filter(i_c.dataobj, size=size, mode='nearest')
 
-    i_w_dataobj = ixf.dataobj / i_cxf.dataobj[..., np.newaxis]
+    # add small number to the denominator to prevent zero division
+    i_w_dataobj = ixf.dataobj / (i_cxf.dataobj[..., np.newaxis] + np.finfo(float).eps)
     i_h_dataobj = i_w_dataobj * i_c.dataobj[..., np.newaxis]
     i_h: SpatialImage = i_c.__class__(i_h_dataobj, i_c.affine, i_c.header)
 
