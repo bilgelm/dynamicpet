@@ -1,4 +1,5 @@
 """Test cases for the PETBIDSImage class."""
+
 from pathlib import Path
 from typing import Callable
 from typing import Generator

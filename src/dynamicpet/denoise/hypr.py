@@ -1,4 +1,5 @@
 """HYPR denoising."""
+
 # from scipy.ndimage import uniform_filter
 import numpy as np
 from nibabel.processing import smooth_image

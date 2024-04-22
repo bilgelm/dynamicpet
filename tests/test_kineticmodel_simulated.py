@@ -1,4 +1,5 @@
 """Test cases for the kineticmodel module using simulated data with ground truth."""
+
 from typing import Any
 
 import numpy as np
@@ -8,7 +9,6 @@ from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 from scipy.integrate import odeint  # type: ignore
 
-from dynamicpet.kineticmodel import kinfitr
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.temporalobject import TemporalImage
@@ -275,6 +275,8 @@ def test_srtmkinfitr_tm(
     frame_duration: NDArray[np.double],
 ) -> None:
     """Test kinfitr SRTM wrapper."""
+    kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
+
     bp_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
@@ -287,8 +289,8 @@ def test_srtmkinfitr_tm(
     km = kinfitr.SRTM(reftac, tac)
     km.fit()
 
-    bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
-    r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
+    bp: NumpyRealNumberArray = km.get_parameter("bp")
+    r1: NumpyRealNumberArray = km.get_parameter("R1")
 
     relative_tol = 0.006
     assert np.allclose(bp, bp_true, rtol=relative_tol)

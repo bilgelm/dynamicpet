@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 project = "Dynamic PET"
 author = "Murat Bilgel"
 copyright = "2023, Murat Bilgel"

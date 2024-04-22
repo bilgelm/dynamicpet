@@ -1,4 +1,5 @@
 """Test cases for the kinfitr wrapper using data provided in kinfitr."""
+
 from collections import namedtuple
 
 import numpy as np
@@ -6,13 +7,13 @@ import pytest
 from rpy2.robjects.packages import data as rdata  # type: ignore
 from rpy2.robjects.packages import importr
 
-from dynamicpet.kineticmodel import kinfitr
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.temporalobject import TemporalMatrix
 
 
 TACPair = namedtuple("TACPair", ["reftac", "tacs"])
+kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
 
 
 @pytest.fixture
@@ -51,9 +52,9 @@ def test_kinfitr_srtm(simref0: TACPair) -> None:
     km.fit()
 
     # check that the results match those provided in kinfitr documentation
-    bp: float = km.get_parameter("bp")[0]  # type: ignore
-    r1: float = km.get_parameter("R1")[0]  # type: ignore
-    k2: float = km.get_parameter("k2")[0]  # type: ignore
+    bp: float = km.get_parameter("bp")[0]
+    r1: float = km.get_parameter("R1")[0]
+    k2: float = km.get_parameter("k2")[0]
 
     assert np.round(bp, 6) == 1.488339
     assert np.round(r1, 6) == 1.233546
@@ -93,8 +94,8 @@ def test_kinfitr_mrtm2(simref0: TACPair) -> None:
     km.fit(k2prime=0.1, frameStartEnd=np.array([1, 20]))
 
     # check that the results match those provided in kinfitr documentation
-    bp: float = km.get_parameter("bp")[0]  # type: ignore
-    k2: float = km.get_parameter("k2")[0]  # type: ignore
+    bp: float = km.get_parameter("bp")[0]
+    k2: float = km.get_parameter("k2")[0]
 
     print(bp)
     print(k2)

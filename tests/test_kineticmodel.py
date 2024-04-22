@@ -1,4 +1,5 @@
 """Test cases for the kineticmodel module."""
+
 import numpy as np
 import pytest
 from nibabel.nifti1 import Nifti1Image

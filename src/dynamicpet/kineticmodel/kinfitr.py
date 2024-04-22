@@ -17,6 +17,8 @@ from .kineticmodel import KineticModel
 
 np_cv_rules = default_converter + numpy2ri.converter
 
+importr("kinfitr")
+
 
 class KinfitrModel(KineticModel, ABC):
     """Generic wrapper for kinfitr reference tissue models."""
@@ -51,7 +53,6 @@ class KinfitrModel(KineticModel, ABC):
         reftac = self.reftac.dataobj.flatten()
         roitacs = tacs.dataobj.reshape(num_elements, tacs.num_frames)
 
-        importr("kinfitr")
         param_estimates = {}
 
         with np_cv_rules.context():
@@ -60,7 +61,9 @@ class KinfitrModel(KineticModel, ABC):
                 res = kinfitr_fun(t_tac, reftac, roitacs[i, :].flatten(), **kwargs)
                 for param_name in res["par"].dtype.names:
                     if param_name not in param_estimates:
-                        param_estimates[param_name] = np.zeros((num_elements, 1))
+                        param_estimates.update(
+                            {param_name: np.zeros((num_elements, 1))}
+                        )
                     param_estimates[param_name][i] = res["par"][param_name]
 
         for param_name, param_estimate in param_estimates.items():
