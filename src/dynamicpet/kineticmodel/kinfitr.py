@@ -7,7 +7,7 @@ from rpy2.robjects import default_converter  # type: ignore
 from rpy2.robjects import numpy2ri
 from rpy2.robjects import r
 from rpy2.robjects.packages import importr  # type: ignore
-from tqdm import trange  # type: ignore
+from tqdm import trange
 
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix

@@ -7,7 +7,7 @@ from numpy.linalg import LinAlgError
 from scipy.linalg import solve  # type: ignore
 from scipy.optimize import curve_fit  # type: ignore
 from scipy.signal import convolve  # type: ignore
-from tqdm import trange  # type: ignore
+from tqdm import trange
 
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalimage import image_maker
