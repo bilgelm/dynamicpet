@@ -108,7 +108,7 @@ Before running these commands, replace
 
 > [!WARNING]
 > Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model
-implementations are very time consuming and are not recommended for imaging data.
+> implementations are very time consuming and are not recommended for imaging data.
 
 [openneuro]: https://openneuro.org
 
