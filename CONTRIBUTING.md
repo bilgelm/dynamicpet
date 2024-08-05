@@ -46,15 +46,15 @@ You need Python 3.11+ and the following tools:
 Install the package with development requirements:
 
 ```console
-$ poetry install
+$ poetry install --all-extras
 ```
 
 You can now run an interactive Python session,
 or the command-line interface:
 
 ```console
-$ poetry run python
-$ poetry run dynamicpet
+$ poetry run denoise --help
+$ poetry run kineticmodel --help
 ```
 
 [poetry]: https://python-poetry.org/
