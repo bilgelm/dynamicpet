@@ -106,9 +106,9 @@ Before running these commands, replace
 `<OPENNEURODATA>` with the path to the directory where you downloaded the data from OpenNeuro and
 `<OUTPUTDIR>` with path to the directory where you'd like to save the parametric images.
 
-```{warning}
-Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model implementations are very time consuming and are not recommended for imaging data.
-```
+> [!WARNING]
+> Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model
+implementations are very time consuming and are not recommended for imaging data.
 
 [openneuro]: https://openneuro.org
 
