@@ -285,10 +285,12 @@ def kineticmodel(
             from dynamicpet.kineticmodel import kinfitr
 
             km = kinfitr.SRTM(reftac, pet_img)
+            km.fit(mask=petmask_img_mat)
         case "kinfitr.srtm2":
             from dynamicpet.kineticmodel import kinfitr
 
             km = kinfitr.SRTM2(reftac, pet_img)
+            km.fit(mask=petmask_img_mat)
         case _:
             raise ValueError(f"Model {model} is not supported")
 

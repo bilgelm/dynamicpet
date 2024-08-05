@@ -330,3 +330,38 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
     assert result.exit_code == 0
     assert os.path.isfile(outputdir / ("pet_km-" + model + "_kp-dvr.nii"))
     assert os.path.isfile(outputdir / ("pet_km-" + model + "_kp-r1.nii"))
+
+
+def test_kineticmodel_kinfitr_srtm(images: dict[str, Path]) -> None:
+    """Test kinfitr's SRTM in __main__.py."""
+    from dynamicpet.__main__ import kineticmodel
+
+    # first, test with tsv TACs
+    petjson_fname = images["petjson_fname"]
+    rois_csv_fname = images["rois_csv_fname"]
+    outputdir = rois_csv_fname.parent / "test_output" / "kinfitr_srtm"
+
+    model = "kinfitr.srtm"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        kineticmodel,
+        [
+            str(rois_csv_fname),
+            "--model",
+            model,
+            "--refroi",
+            "ROI1",
+            "--json",
+            str(petjson_fname),
+            "--start",
+            str(0),
+            "--end",
+            str(70),
+            "--outputdir",
+            str(outputdir),
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0
+    assert os.path.isfile(outputdir / ("rois_km-" + model.replace(".", "") + ".tsv"))
