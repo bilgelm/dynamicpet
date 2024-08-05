@@ -334,6 +334,8 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
 
 def test_kineticmodel_kinfitr_srtm(images: dict[str, Path]) -> None:
     """Test kinfitr's SRTM in __main__.py."""
+    pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
+
     from dynamicpet.__main__ import kineticmodel
 
     # first, test with tsv TACs
