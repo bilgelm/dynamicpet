@@ -301,7 +301,7 @@ class SRTMZhou2003(KineticModel):
                 # based on Eq. 11 in Zhou et al.
                 x = np.column_stack((reftac, int_reftac, -int_tac))
                 h_d = np.diag(h[k, :])
-                b_sc = np.row_stack(
+                b_sc = np.vstack(
                     (smooth_r1_mat[k], smooth_k2_mat[k], smooth_k2a_mat[k])
                 )
                 try:

@@ -10,6 +10,7 @@ from typing import TypeVar
 
 import numpy as np
 from scipy.integrate import cumulative_trapezoid  # type: ignore
+from scipy.integrate import trapezoid
 
 from ..typing_utils import NumpyRealNumberArray
 from ..typing_utils import RealNumber
@@ -329,7 +330,7 @@ class TemporalObject(Generic[T], ABC):
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            dyn_mean = np.trapz(self.dataobj, self.frame_mid) / (
+            dyn_mean = trapezoid(self.dataobj, self.frame_mid) / (
                 self.frame_mid[-1] - self.frame_mid[0]
             )
         else:

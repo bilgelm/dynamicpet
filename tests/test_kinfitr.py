@@ -38,7 +38,7 @@ def simref0() -> TACPair:
     # this should not affect kinfitr functions as they will add the 0 back
     reftac_tm = TemporalMatrix(reftac[1:], frame_start[1:], frame_duration[1:])
     tac_tm = TemporalMatrix(
-        np.row_stack((tac1[1:], tac2[1:], tac3[1:])),
+        np.vstack((tac1[1:], tac2[1:], tac3[1:])),
         frame_start[1:],
         frame_duration[1:],
     )

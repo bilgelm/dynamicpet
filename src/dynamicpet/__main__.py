@@ -11,6 +11,7 @@ from nibabel.loadsave import load as nib_load
 from nibabel.spatialimages import SpatialImage
 
 from dynamicpet.denoise import hypr
+from dynamicpet.denoise import nesma
 from dynamicpet.kineticmodel.kineticmodel import KineticModel
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
@@ -41,12 +42,43 @@ WEIGHTS = str(WEIGHT_OPTS).replace("'", "").split("[")[1].split("]")[0].split(",
 
 @click.command()
 @click.argument("pet", type=str)
-@click.argument("fwhm", type=float)
 @click.option(
     "--method",
-    type=click.Choice(["HYPRLR"], case_sensitive=False),
+    type=click.Choice(["HYPRLR", "NESMA"], case_sensitive=False),
     required=True,
     help="Name of denoising method",
+)
+@click.option(
+    "--fwhm",
+    default=None,
+    type=float,
+    help="Full width at half max in mm for smoothing (only for HYPR-LR)",
+)
+@click.option(
+    "--mask",
+    default=None,
+    type=str,
+    help=(
+        "Binary mask specifying voxels where denoising should be performed. "
+        "(only for NESMA)"
+    ),
+)
+@click.option(
+    "--window_half_size",
+    default=None,
+    nargs=3,
+    type=int,
+    help=(
+        "The size of search window centered around a voxel will be "
+        "2 * window_half_size + 1 (any part of the window that extends beyond "
+        "the image will be truncated). (only for NESMA)"
+    ),
+)
+@click.option(
+    "--thresh",
+    default=0.05,
+    type=click.FloatRange(0, 1),
+    help="threshold (only for NESMA)",
 )
 @click.option(
     "--outputdir",
@@ -59,21 +91,48 @@ WEIGHTS = str(WEIGHT_OPTS).replace("'", "").split("[")[1].split("]")[0].split(",
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
 def denoise(
-    pet: str, fwhm: float, method: str, outputdir: str | None, json: str | None
+    pet: str,
+    method: str,
+    fwhm: float | None,
+    mask: str | None,
+    window_half_size: tuple[int, int, int] | None,
+    thresh: float | None,
+    outputdir: str | None,
+    json: str | None,
 ) -> None:
     """Perform dynamic PET denoising.
 
     Outputs will have a '_<method>' suffix.
 
     PET: 4-D PET image
-
-    FWHM: full width at half max, in mm, for smoothing filter
     """
     # load PET
     pet_img = petbidsimage_load(pet, json)
 
     if method == "HYPRLR":
-        res = hypr.hypr_lr(pet_img, fwhm)
+        if fwhm:
+            res = hypr.hypr_lr(pet_img, fwhm)
+        else:
+            raise ValueError("fwhm must be specified for HYPR-LR")
+    elif method == "NESMA":
+        if mask:
+            mask_img: SpatialImage = nib_load(mask)  # type: ignore
+            # check that mask is in the same space as pet
+            if not np.all(pet_img.img.affine == mask_img.affine):
+                raise ValueError("PET and mask are not in the same space")
+            mask_img_mat: NumpyRealNumberArray = mask_img.get_fdata().astype("bool")
+
+            if window_half_size:
+                if thresh:
+                    res, _ = nesma.nesma_semiadaptive(
+                        pet_img, mask_img_mat, window_half_size, thresh
+                    )
+                else:
+                    raise ValueError("thresh must be specified for NESMA")
+            else:
+                raise ValueError("window_half_size must be specified for NESMA")
+        else:
+            raise ValueError("mask must be specified for NESMA")
     else:
         raise NotImplementedError(f"Denoising method {method} is not supported")
 
@@ -82,7 +141,7 @@ def denoise(
         os.makedirs(outputdir, exist_ok=True)
         bname = os.path.basename(froot)
         froot = os.path.join(outputdir, bname)
-    output = froot + "_hyprlr" + ext + addext
+    output = froot + "_" + method.lower() + ext + addext
     res.to_filename(output)
 
 

@@ -64,7 +64,9 @@ class KinfitrModel(KineticModel, ABC):
                         param_estimates.update(
                             {param_name: np.zeros((num_elements, 1))}
                         )
-                    param_estimates[param_name][i] = res["par"][param_name]
+                    param_estimates[param_name][i] = res["par"][  # noqa: B909
+                        param_name
+                    ]
 
         for param_name, param_estimate in param_estimates.items():
             self.set_parameter(param_name, param_estimate, mask)

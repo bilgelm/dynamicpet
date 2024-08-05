@@ -119,7 +119,7 @@ def images() -> dict[str, Path]:
     return fnames
 
 
-def test_denoise(images: dict[str, Path]) -> None:
+def test_denoise_hyprlr(images: dict[str, Path]) -> None:
     """Test denoise in __main__.py."""
     from dynamicpet.__main__ import denoise
 
@@ -129,13 +129,56 @@ def test_denoise(images: dict[str, Path]) -> None:
     runner = CliRunner()
     result = runner.invoke(
         denoise,
-        ["--method", "HYPRLR", str(pet_fname), "5.0", "--outputdir", str(outputdir)],
+        [
+            "--method",
+            "HYPRLR",
+            str(pet_fname),
+            "--fwhm",
+            "5.0",
+            "--outputdir",
+            str(outputdir),
+        ],
         catch_exceptions=False,
     )
 
     assert result.exit_code == 0
     assert os.path.isfile(outputdir / "pet_hyprlr.nii")
     assert os.path.isfile(outputdir / "pet_hyprlr.json")
+
+
+@pytest.mark.skip(reason="current NESMA implementation is too slow")
+def test_denoise_nesma(images: dict[str, Path]) -> None:
+    """Test denoise in __main__.py."""
+    from dynamicpet.__main__ import denoise
+
+    pet_fname = images["pet_fname"]
+    petmask_fname = images["petmask_fname"]
+    outputdir = pet_fname.parent / "test_output" / "nesma"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        denoise,
+        [
+            "--method",
+            "NESMA",
+            str(pet_fname),
+            "--mask",
+            str(petmask_fname),
+            "--window_half_size",
+            "3",
+            "3",
+            "3",
+            "--thresh",
+            "0.05",
+            "--outputdir",
+            str(outputdir),
+        ],
+        catch_exceptions=False,
+    )
+
+    assert result.exit_code == 0
+    assert os.path.isfile(outputdir / "pet_nesma.nii")
+    assert os.path.isfile(outputdir / "pet_nesma.json")
 
 
 def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
