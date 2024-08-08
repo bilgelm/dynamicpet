@@ -34,8 +34,8 @@ class SRTMLammertsma1996(KineticModel):
 
     def fit(
         self,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
         mask: NumpyRealNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
     ) -> None:
         """Estimate model parameters.
 
@@ -168,9 +168,9 @@ class SRTMZhou2003(KineticModel):
 
     def fit(  # noqa: max-complexity: 12
         self,
+        mask: NumpyRealNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "trapz",
         weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = "frame_duration",
-        mask: NumpyRealNumberArray | None = None,
         fwhm: RealNumber | list[RealNumber] | None = None,
     ) -> None:
         """Estimate model parameters.

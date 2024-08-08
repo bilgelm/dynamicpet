@@ -70,10 +70,10 @@ class KineticModel(ABC):
         self.parameters: dict[str, NumpyRealNumberArray] = {}
 
     @abstractmethod
-    def fit(self) -> None:
+    def fit(self, mask: NumpyRealNumberArray | None = None) -> None:
         """Estimate model parameters."""
         # implementation should update self.parameters
-        pass
+        raise NotImplementedError
 
     def get_parameter(self, param_name: str) -> SpatialImage | NumpyRealNumberArray:
         """Get a fitted parameter.

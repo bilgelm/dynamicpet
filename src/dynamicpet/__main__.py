@@ -272,13 +272,13 @@ def kineticmodel(
             km.fit(mask=petmask_img_mat)
         case "srtmlammertsma1996":
             km = SRTMLammertsma1996(reftac, pet_img)
-            km.fit(weight_by=weight_by, mask=petmask_img_mat)
+            km.fit(mask=petmask_img_mat, weight_by=weight_by)
         case "srtmzhou2003":
             km = SRTMZhou2003(reftac, pet_img)
             km.fit(
+                mask=petmask_img_mat,
                 integration_type=integration_type,
                 weight_by=weight_by,
-                mask=petmask_img_mat,
                 fwhm=fwhm,
             )
         case "kinfitr.srtm":
