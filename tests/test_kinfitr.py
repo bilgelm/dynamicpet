@@ -4,8 +4,6 @@ from collections import namedtuple
 
 import numpy as np
 import pytest
-from rpy2.robjects.packages import data as rdata  # type: ignore
-from rpy2.robjects.packages import importr
 
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
@@ -14,13 +12,14 @@ from dynamicpet.temporalobject import TemporalMatrix
 
 TACPair = namedtuple("TACPair", ["reftac", "tacs"])
 kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
+rpy2 = pytest.importorskip("rpy2")
 
 
 @pytest.fixture
 def simref0() -> TACPair:
     """Get data for first subject in kinfitr's simref dataset."""
-    kinfitr = importr("kinfitr")
-    simref = rdata(kinfitr).fetch("simref")["simref"]
+    kinfitr = rpy2.robjects.packages.importr("kinfitr")
+    simref = rpy2.robjects.packages.data(kinfitr).fetch("simref")["simref"]
     # get data for participant at index i
     i = 0
     simref_i = np.array(simref[3][i])

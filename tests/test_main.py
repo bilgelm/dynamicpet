@@ -243,11 +243,11 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
     assert os.path.isfile(outputdir / "pet_km-suvr_kp-suvr.nii")
 
     # finally, make sure that the two methods give the same results
-    # read in rois_km-suvr.tsv without using pandas
-    with open(outputdir / "rois_km-suvr.tsv") as f:
-        lines = f.readlines()
+
     # skip the header (column names) and the first column (ROI names)
-    rois_km_suvr = np.array([line.split("\t")[1] for line in lines[1:]], dtype=float)
+    rois_km_suvr = np.genfromtxt(
+        outputdir / "rois_km-suvr.tsv", delimiter="\t", skip_header=1, usecols=(1,)
+    )
 
     # read in rois_fname
     rois_img: SpatialImage = nib_load(images["rois_fname"])  # type: ignore

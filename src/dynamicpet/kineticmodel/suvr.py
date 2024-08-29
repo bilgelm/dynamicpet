@@ -4,8 +4,8 @@ import numpy as np
 
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import NumpyRealNumber
-from ..typing_utils import NumpyRealNumberArray
 from .kineticmodel import KineticModel
 
 
@@ -22,7 +22,7 @@ class SUVR(KineticModel):
         """Get names of kinetic model parameters."""
         return ["suvr"]
 
-    def fit(self, mask: NumpyRealNumberArray | None = None) -> None:
+    def fit(self, mask: NumpyNumberArray | None = None) -> None:
         """Calculate SUVR.
 
         Args:
@@ -50,7 +50,7 @@ class SUVR(KineticModel):
         """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
 
-        numerator: NumpyRealNumberArray = np.sum(
+        numerator: NumpyNumberArray = np.sum(
             tacs.dataobj * tacs.frame_duration, axis=-1
         )
         denominator: NumpyRealNumber = np.sum(

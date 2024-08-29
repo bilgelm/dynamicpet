@@ -23,7 +23,7 @@ from dynamicpet.petbids.petbidsmatrix import load as petbidsmatrix_load
 from dynamicpet.temporalobject import TemporalMatrix
 from dynamicpet.temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
 from dynamicpet.temporalobject.temporalobject import WEIGHT_OPTS
-from dynamicpet.typing_utils import NumpyRealNumberArray
+from dynamicpet.typing_utils import NumpyNumberArray
 
 
 IMPLEMENTED_KMS = [
@@ -120,7 +120,7 @@ def denoise(
             # check that mask is in the same space as pet
             if not np.all(pet_img.img.affine == mask_img.affine):
                 raise ValueError("PET and mask are not in the same space")
-            mask_img_mat: NumpyRealNumberArray = mask_img.get_fdata().astype("bool")
+            mask_img_mat: NumpyNumberArray = mask_img.get_fdata().astype("bool")
 
             if window_half_size:
                 if thresh:
@@ -329,7 +329,7 @@ def parse_kineticmodel_inputs(
     refroi: str | None = None,
     refmask: str | None = None,
     petmask: str | None = None,
-) -> tuple[PETBIDSImage | PETBIDSMatrix, TemporalMatrix, NumpyRealNumberArray | None]:
+) -> tuple[PETBIDSImage | PETBIDSMatrix, TemporalMatrix, NumpyNumberArray | None]:
     """Parse kinetic model inputs.
 
     Args:
@@ -374,9 +374,9 @@ def parse_kineticmodel_inputs(
     # check that refmask is in the same space as pet
     if not np.all(tac_object.img.affine == refmask_img.affine):
         raise ValueError("PET and refmask are not in the same space")
-    refmask_img_mat: NumpyRealNumberArray = refmask_img.get_fdata().astype("bool")
+    refmask_img_mat: NumpyNumberArray = refmask_img.get_fdata().astype("bool")
 
-    petmask_img_mat: NumpyRealNumberArray | None
+    petmask_img_mat: NumpyNumberArray | None
     if petmask:
         petmask_img: SpatialImage = nib_load(petmask)  # type: ignore
         # check that petmask is in the same space as pet

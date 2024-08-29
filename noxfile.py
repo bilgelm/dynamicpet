@@ -150,7 +150,7 @@ def safety(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("mypy", "pytest", "pytest-mock", "requests", "types-requests")
     session.run("mypy", *args)
     if not session.posargs:
@@ -160,7 +160,7 @@ def mypy(session: Session) -> None:
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("coverage[toml]", "pytest", "pytest-mock", "pygments", "requests")
     try:
         session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
@@ -185,7 +185,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("pytest", "pytest-mock", "typeguard", "pygments", "requests")
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
@@ -200,7 +200,7 @@ def xdoctest(session: Session) -> None:
         if "FORCE_COLOR" in os.environ:
             args.append("--colored=1")
 
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("xdoctest[colors]")
     session.run("python", "-m", "xdoctest", *args)
 
@@ -212,7 +212,7 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("sphinx", "sphinx-click", "furo", "myst-parser")
 
     build_dir = Path("docs", "_build")
@@ -226,7 +226,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
 
     build_dir = Path("docs", "_build")

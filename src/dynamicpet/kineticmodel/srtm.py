@@ -14,7 +14,7 @@ from ..temporalobject.temporalimage import image_maker
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
 from ..temporalobject.temporalobject import WEIGHT_OPTS
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import RealNumber
 from .kineticmodel import KineticModel
 
@@ -34,8 +34,8 @@ class SRTMLammertsma1996(KineticModel):
 
     def fit(
         self,
-        mask: NumpyRealNumberArray | None = None,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        mask: NumpyNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
     ) -> None:
         """Estimate model parameters.
 
@@ -101,7 +101,7 @@ class SRTMLammertsma1996(KineticModel):
 
 def srtm_model(
     reftac: TemporalMatrix, bp: float, r1: float, k2: float
-) -> NumpyRealNumberArray:
+) -> NumpyNumberArray:
     """SRTM model to generate a target TAC.
 
     Args:
@@ -118,7 +118,7 @@ def srtm_model(
     # to a higher frequency uniform timing grid, convolve, and then
     # downsample to original timing grid
 
-    t = reftac.frame_mid
+    t = reftac.frame_mid.astype("float")
     # find smallest time interval in data
     # step = np.min(reftac.frame_duration)
     # t_upsampled = np.arange(t[0], t[-1], step)
@@ -126,7 +126,9 @@ def srtm_model(
     #     t_upsampled = np.append(t_upsampled, t_upsampled[-1] + step)
     t_upsampled, step = np.linspace(np.min(t), np.max(t), 1024, retstep=True)
 
-    reftac_upsampled = np.interp(t_upsampled, t, reftac.dataobj.flatten())
+    reftac_upsampled = np.interp(
+        t_upsampled, t, reftac.dataobj.astype("float").flatten()
+    )
 
     k2a = k2 / (1 + bp)
     conv_res_upsampled = (
@@ -168,9 +170,9 @@ class SRTMZhou2003(KineticModel):
 
     def fit(  # noqa: max-complexity: 12
         self,
-        mask: NumpyRealNumberArray | None = None,
+        mask: NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "trapz",
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = "frame_duration",
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = "frame_duration",
         fwhm: RealNumber | list[RealNumber] | None = None,
     ) -> None:
         """Estimate model parameters.
@@ -191,9 +193,9 @@ class SRTMZhou2003(KineticModel):
             fwhm: scalar or length 3 sequence, FWHM in mm over which to smooth
         """
         # get reference TAC as a 1-D vector
-        reftac: NumpyRealNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
+        reftac: NumpyNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
         # numerical integration of reference TAC
-        int_reftac: NumpyRealNumberArray = self.reftac.cumulative_integral(
+        int_reftac: NumpyNumberArray = self.reftac.cumulative_integral(
             integration_type
         ).flatten()
 
@@ -201,8 +203,8 @@ class SRTMZhou2003(KineticModel):
         n = tacs.num_frames
         m = 3
         num_elements = tacs.num_elements
-        tacs_mat: NumpyRealNumberArray = tacs.dataobj
-        int_tacs_mat: NumpyRealNumberArray = tacs.cumulative_integral(integration_type)
+        tacs_mat: NumpyNumberArray = tacs.dataobj
+        int_tacs_mat: NumpyNumberArray = tacs.cumulative_integral(integration_type)
 
         weights = tacs.get_weights(weight_by)
         w = np.diag(weights)
@@ -247,7 +249,7 @@ class SRTMZhou2003(KineticModel):
             # a smoothing FWHM is provided.
             x = np.column_stack((int_reftac, reftac, -tac))
 
-            b: NumpyRealNumberArray
+            b: NumpyNumberArray
             try:
                 b = solve(x.T @ w @ x, x.T @ w @ int_tac, assume_a="sym")
             except LinAlgError:
@@ -319,9 +321,9 @@ class SRTMZhou2003(KineticModel):
 
     def prep_refine_r1(
         self,
-        mask: NumpyRealNumberArray | None = None,
+        mask: NumpyNumberArray | None = None,
         fwhm: RealNumber | list[RealNumber] | None = None,
-    ) -> tuple[NumpyRealNumberArray, ...]:
+    ) -> tuple[NumpyNumberArray, ...]:
         """Refine R1.
 
         Args:
@@ -376,9 +378,9 @@ class SRTMZhou2003(KineticModel):
         h1_img = image_maker(h1, smooth_k2_img)
         h2_img = image_maker(h2, smooth_k2a_img)
 
-        smooth_r1_mat: NumpyRealNumberArray
-        smooth_k2_mat: NumpyRealNumberArray
-        smooth_k2a_mat: NumpyRealNumberArray
+        smooth_r1_mat: NumpyNumberArray
+        smooth_k2_mat: NumpyNumberArray
+        smooth_k2a_mat: NumpyNumberArray
         if mask is None:
             smooth_r1_mat = smooth_r1_img.get_fdata().flatten()
             smooth_k2_mat = smooth_k2_img.get_fdata().flatten()

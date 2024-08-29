@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import RealNumber
 from .temporalobject import INTEGRATION_TYPE_OPTS
 from .temporalobject import WEIGHT_OPTS
@@ -27,13 +27,13 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         elem_names: list of k element names
     """
 
-    _dataobj: NumpyRealNumberArray
+    _dataobj: NumpyNumberArray
 
     def __init__(
         self,
-        dataobj: NumpyRealNumberArray,
-        frame_start: NumpyRealNumberArray,
-        frame_duration: NumpyRealNumberArray,
+        dataobj: NumpyNumberArray,
+        frame_start: NumpyNumberArray,
+        frame_duration: NumpyNumberArray,
         elem_names: list[str] | None = None,
     ) -> None:
         """Matrix with corresponding time frame information.
@@ -49,13 +49,13 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             TimingError: inconsistent timing info
         """
         check_frametiming(frame_start, frame_duration)
-        self.frame_start: NumpyRealNumberArray = frame_start
-        self.frame_duration: NumpyRealNumberArray = frame_duration
+        self.frame_start: NumpyNumberArray = frame_start
+        self.frame_duration: NumpyNumberArray = frame_duration
 
         if dataobj.size == 0:
             raise ValueError("dataobj is empty")
 
-        self._dataobj: NumpyRealNumberArray
+        self._dataobj: NumpyNumberArray
         if dataobj.ndim == 1:
             # if matrix is 1D, store as matrix with a single element in 1st dim
             self._dataobj = dataobj[np.newaxis, :]
@@ -82,7 +82,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
             )
 
     @property
-    def dataobj(self) -> NumpyRealNumberArray:
+    def dataobj(self) -> NumpyNumberArray:
         """Get data object."""
         return self._dataobj
 
@@ -105,7 +105,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         """
         start_index, end_index = self.get_idx_extract_time(start_time, end_time)
 
-        extracted_matrix: NumpyRealNumberArray = self.dataobj[:, start_index:end_index]
+        extracted_matrix: NumpyNumberArray = self.dataobj[:, start_index:end_index]
 
         return TemporalMatrix(
             extracted_matrix,
@@ -116,9 +116,9 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
 
     def dynamic_mean(
         self,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "rect",
-    ) -> NumpyRealNumberArray:
+    ) -> NumpyNumberArray:
         """Compute the (weighted) dynamic mean over time.
 
         Args:
@@ -171,7 +171,7 @@ class TemporalMatrix(TemporalObject["TemporalMatrix"]):
         return concat_res
 
     def timeseries_in_mask(
-        self, mask: NumpyRealNumberArray | None = None
+        self, mask: NumpyNumberArray | None = None
     ) -> "TemporalMatrix":
         """Get timeseries for each element within a subset of the elements.
 
