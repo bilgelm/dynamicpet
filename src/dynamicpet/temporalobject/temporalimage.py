@@ -6,7 +6,7 @@ from nibabel.imageclasses import spatial_axes_first
 from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import RealNumber
 from .temporalmatrix import TemporalMatrix
 from .temporalobject import INTEGRATION_TYPE_OPTS
@@ -35,8 +35,8 @@ class TemporalImage(TemporalObject["TemporalImage"]):
     def __init__(
         self,
         img: SpatialImage,
-        frame_start: NumpyRealNumberArray,
-        frame_duration: NumpyRealNumberArray,
+        frame_start: NumpyNumberArray,
+        frame_duration: NumpyNumberArray,
     ) -> None:
         """4-D image with corresponding time frame information.
 
@@ -88,10 +88,10 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         """Get number of voxels in each frame."""
         return self.num_elements
 
-    # def nontemporal_object_maker(self) -> Callable[[NumpyRealNumberArray],
+    # def nontemporal_object_maker(self) -> Callable[[NumpyNumberArray],
     #                                                SpatialImage]:
     #     """Get a Callable for creating a dataobj for TemporalImage."""
-    #     func: Callable[[NumpyRealNumberArray], SpatialImage] = \
+    #     func: Callable[[NumpyNumberArray], SpatialImage] = \
     #         lambda data: self.img.__class__(
     #             data, self.img.affine, self.img.header)
     #     return func
@@ -119,7 +119,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
 
     def dynamic_mean(
         self,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "rect",
     ) -> SpatialImage:
         """Compute the (weighted) dynamic mean over time.
@@ -171,7 +171,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         return concat_res
 
     def timeseries_in_mask(
-        self, mask: NumpyRealNumberArray | None = None
+        self, mask: NumpyNumberArray | None = None
     ) -> TemporalMatrix:
         """Get time activity curves (TAC) for each voxel within a region of interest.
 
@@ -199,7 +199,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         )
         return tacs
 
-    def mean_timeseries_in_mask(self, mask: NumpyRealNumberArray) -> TemporalMatrix:
+    def mean_timeseries_in_mask(self, mask: NumpyNumberArray) -> TemporalMatrix:
         """Get mean time activity curve (TAC) within a region of interest.
 
         Args:
@@ -216,7 +216,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         return mean_tac
 
 
-def image_maker(x: NumpyRealNumberArray, img: SpatialImage) -> SpatialImage:
+def image_maker(x: NumpyNumberArray, img: SpatialImage) -> SpatialImage:
     """Make image from dataobj.
 
     Args:

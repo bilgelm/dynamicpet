@@ -5,15 +5,15 @@ from tqdm import tqdm
 
 from ..petbids.petbidsimage import PETBIDSImage
 from ..temporalobject.temporalimage import image_maker
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 
 
 def nesma_semiadaptive(
     ti: PETBIDSImage,
-    mask: NumpyRealNumberArray,
+    mask: NumpyNumberArray,
     window_half_size: tuple[int, int, int],
     thresh: float = 0.05,
-) -> tuple[PETBIDSImage, NumpyRealNumberArray]:
+) -> tuple[PETBIDSImage, NumpyNumberArray]:
     """NESMA denoising.
 
     NESMA is short for Nonlocal EStimation of multispectral MAgnitudes.

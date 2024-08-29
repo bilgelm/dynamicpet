@@ -11,7 +11,7 @@ from tqdm import trange
 
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from .kineticmodel import KineticModel
 
 
@@ -34,9 +34,7 @@ class KinfitrModel(KineticModel, ABC):
         return ["bp", "R1", "k2"]
 
     def fit(
-        self,
-        mask: NumpyRealNumberArray | None = None,
-        **kwargs: NumpyRealNumberArray | float
+        self, mask: NumpyNumberArray | None = None, **kwargs: NumpyNumberArray | float
     ) -> None:
         """Estimate model parameters.
 

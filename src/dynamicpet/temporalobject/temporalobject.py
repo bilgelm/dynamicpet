@@ -12,7 +12,7 @@ import numpy as np
 from scipy.integrate import cumulative_trapezoid  # type: ignore
 from scipy.integrate import trapezoid
 
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import RealNumber
 
 
@@ -34,13 +34,13 @@ class TemporalObject(Generic[T], ABC):
         frame_duration: vector containing the durations of each frame
     """
 
-    frame_start: NumpyRealNumberArray
-    frame_duration: NumpyRealNumberArray
+    frame_start: NumpyNumberArray
+    frame_duration: NumpyNumberArray
 
     @property
     def shape(self) -> tuple[int, ...]:
         """Get shape of dataobj."""
-        return self.dataobj.shape
+        return self.dataobj.shape  # type: ignore
 
     @property
     def num_elements(self) -> int:
@@ -53,12 +53,12 @@ class TemporalObject(Generic[T], ABC):
         return len(self.frame_start)
 
     @property
-    def frame_mid(self) -> NumpyRealNumberArray:
+    def frame_mid(self) -> NumpyNumberArray:
         """Get an array of mid times for each frame."""
         return 0.5 * (self.frame_start + self.frame_end)
 
     @property
-    def frame_end(self) -> NumpyRealNumberArray:
+    def frame_end(self) -> NumpyNumberArray:
         """Get an array of end times for each frame."""
         return self.frame_start + self.frame_duration
 
@@ -218,7 +218,7 @@ class TemporalObject(Generic[T], ABC):
 
     @property
     @abstractmethod
-    def dataobj(self) -> NumpyRealNumberArray:
+    def dataobj(self) -> NumpyNumberArray:
         """Get data object, which can be a 2-D or a 3-D matrix.
 
         The last dimension of dataobj corresponds to time.
@@ -265,8 +265,8 @@ class TemporalObject(Generic[T], ABC):
         return first_img, second_img
 
     def get_weights(
-        self, weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None
-    ) -> NumpyRealNumberArray:
+        self, weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None
+    ) -> NumpyNumberArray:
         """Get weights for each time frame.
 
         Args:
@@ -281,7 +281,7 @@ class TemporalObject(Generic[T], ABC):
         Raises:
             ValueError: invalid weights
         """
-        delta: NumpyRealNumberArray
+        delta: NumpyNumberArray
         if weight_by is None:
             delta = np.ones_like(self.frame_duration)
         elif isinstance(weight_by, str):
@@ -297,9 +297,9 @@ class TemporalObject(Generic[T], ABC):
 
     def _dynamic_mean(
         self,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "rect",
-    ) -> NumpyRealNumberArray:
+    ) -> NumpyNumberArray:
         """Compute the (weighted) dynamic mean over time.
 
         Args:
@@ -315,10 +315,12 @@ class TemporalObject(Generic[T], ABC):
         Raises:
             ValueError: invalid integration type
         """
-        dyn_mean: NumpyRealNumberArray
+        dyn_mean: NumpyNumberArray
         if integration_type == "rect":
             dyn_mean = np.average(
-                self.dataobj, axis=-1, weights=self.get_weights(weight_by)
+                self.dataobj,  # type: ignore
+                axis=-1,
+                weights=self.get_weights(weight_by),
             )
         elif integration_type == "trapz":
             if weight_by:
@@ -340,7 +342,7 @@ class TemporalObject(Generic[T], ABC):
 
     def cumulative_integral(
         self, integration_type: INTEGRATION_TYPE_OPTS = "trapz"
-    ) -> NumpyRealNumberArray:
+    ) -> NumpyNumberArray:
         """Cumulative integration starting at t=0 and ending at each frame_end.
 
         If start_time > 0, the triangular area between (t=0, 0) and
@@ -380,7 +382,7 @@ class TemporalObject(Generic[T], ABC):
         # if start_time > 0, then we assume activity linearly increased from 0
         # to values attained in first frame
         initial = self.start_time * self.dataobj[..., 0] / 2
-        res: NumpyRealNumberArray
+        res: NumpyNumberArray
 
         if integration_type == "rect":
             res = (
@@ -398,7 +400,7 @@ class TemporalObject(Generic[T], ABC):
 
 
 def check_frametiming(
-    frame_start: NumpyRealNumberArray, frame_duration: NumpyRealNumberArray
+    frame_start: NumpyNumberArray, frame_duration: NumpyNumberArray
 ) -> None:
     """Check if frame timing is valid.
 

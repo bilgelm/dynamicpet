@@ -9,7 +9,7 @@ from nibabel.spatialimages import SpatialImage
 from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalimage import image_maker
 from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 
 
 # rename to ReferenceTissueKineticModel ??
@@ -29,7 +29,7 @@ class KineticModel(ABC):
 
     reftac: TemporalMatrix
     tacs: TemporalMatrix | TemporalImage
-    parameters: dict[str, NumpyRealNumberArray]
+    parameters: dict[str, NumpyNumberArray]
 
     @classmethod
     @abstractmethod
@@ -67,15 +67,15 @@ class KineticModel(ABC):
 
         self.reftac: TemporalMatrix = reftac
         self.tacs: TemporalMatrix | TemporalImage = tacs
-        self.parameters: dict[str, NumpyRealNumberArray] = {}
+        self.parameters: dict[str, NumpyNumberArray] = {}
 
     @abstractmethod
-    def fit(self, mask: NumpyRealNumberArray | None = None) -> None:
+    def fit(self, mask: NumpyNumberArray | None = None) -> None:
         """Estimate model parameters."""
         # implementation should update self.parameters
         raise NotImplementedError
 
-    def get_parameter(self, param_name: str) -> SpatialImage | NumpyRealNumberArray:
+    def get_parameter(self, param_name: str) -> SpatialImage | NumpyNumberArray:
         """Get a fitted parameter.
 
         If the input (tacs) is an image, parameter will be returned as an image.
@@ -108,7 +108,7 @@ class KineticModel(ABC):
                 )
                 return param_img
             else:
-                param_vector: NumpyRealNumberArray = self.parameters[param_name]
+                param_vector: NumpyNumberArray = self.parameters[param_name]
                 return param_vector
         elif param_name == "bp" and "dvr" in self.parameters:
             self.parameters[param_name] = self.parameters["dvr"] - 1
@@ -124,8 +124,8 @@ class KineticModel(ABC):
     def set_parameter(
         self,
         param_name: str,
-        param: NumpyRealNumberArray,
-        mask: NumpyRealNumberArray | None = None,
+        param: NumpyNumberArray,
+        mask: NumpyNumberArray | None = None,
     ) -> None:
         """Set kinetic model parameter.
 

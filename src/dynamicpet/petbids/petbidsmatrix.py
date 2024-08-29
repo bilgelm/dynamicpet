@@ -8,7 +8,7 @@ from os import PathLike
 import numpy as np
 
 from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyRealNumberArray
+from ..typing_utils import NumpyNumberArray
 from ..typing_utils import RealNumber
 from .petbidsjson import PetBidsJson
 from .petbidsjson import get_frametiming_in_mins
@@ -36,7 +36,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
     def __init__(
         self,
-        dataobj: NumpyRealNumberArray,
+        dataobj: NumpyNumberArray,
         json_dict: PetBidsJson,
         elem_names: list[str] | None = None,
     ) -> None:
