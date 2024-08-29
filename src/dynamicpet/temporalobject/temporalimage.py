@@ -81,7 +81,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
     @property
     def dataobj(self) -> NDArray[np.double]:
         """Get dataobj of image."""
-        return np.array(self.img.dataobj, dtype=np.double)
+        return np.asarray(self.img.dataobj, dtype=np.double)
 
     @property
     def num_voxels(self) -> int:

@@ -146,14 +146,12 @@ def load(
 
     if jsonfilename is None:
         jsonfilename = fbase + ".json"
+    json_dict = read_json(jsonfilename)
 
-    tsv = []
     with open(filename) as f:
         tsvreader = csv.reader(f, delimiter="\t")
         header = next(tsvreader)
-        for line in tsvreader:
-            tsv.append([float(val) for val in line])
 
-    json_dict = read_json(jsonfilename)
+    tsv = np.genfromtxt(filename, delimiter="\t", skip_header=1)
 
-    return PETBIDSMatrix(np.array(tsv).T, json_dict, header)
+    return PETBIDSMatrix(tsv.T, json_dict, header)
