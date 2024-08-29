@@ -70,6 +70,7 @@ tests = ["tests", "*/tests"]
 [tool.coverage.run]
 branch = true
 source = ["dynamicpet", "tests"]
+omit = ["src/dynamicpet/kineticmodel/kinfitr.py"]
 
 [tool.coverage.report]
 show_missing = true
