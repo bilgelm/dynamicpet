@@ -146,7 +146,6 @@ def test_denoise_hyprlr(images: dict[str, Path]) -> None:
     assert os.path.isfile(outputdir / "pet_hyprlr.json")
 
 
-@pytest.mark.skip(reason="current NESMA implementation is too slow")
 def test_denoise_nesma(images: dict[str, Path]) -> None:
     """Test denoise in __main__.py."""
     from dynamicpet.__main__ import denoise
