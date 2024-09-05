@@ -1,0 +1,9 @@
+name: hackathon
+channels:
+  - conda-forge
+dependencies:
+  - git
+  - python=3.12
+  - poetry
+  - nox
+  - nox-poetry
