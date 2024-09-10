@@ -6,6 +6,7 @@
 /.pytype/
 /dist/
 /docs/_build/
+/docs/jupyter_execute/
 /src/*.egg-info/
 __pycache__/
 /.vscode
