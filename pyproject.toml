@@ -62,6 +62,7 @@ typeguard = ">=4.0.0rc1"
 sphinx-click = ">=4.4.0"
 requests = ">=2.31.0"
 types-requests = ">=2.31.0.2"
+myst-nb = "^1.1.1"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
