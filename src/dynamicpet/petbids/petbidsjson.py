@@ -47,10 +47,13 @@ class PetBidsJson(TypedDict):
 
     TracerRadionuclide: str
 
-    ScanStart: float
+    TimeZero: str  # HH:MM:SS
+    ScanStart: float  # at least one of ScanStart and InjectionStart should be 0
     InjectionStart: float
     FrameTimesStart: list[float]
     FrameDuration: list[float]
+    ImageDecayCorrected: bool
+    ImageDecayCorrectionTime: NotRequired[float]  # required if ImageDecayCorrected
 
     # entries below are not needed for any function in this module, but some are
     # required by the PET-BIDS standard
@@ -101,14 +104,11 @@ class PetBidsJson(TypedDict):
     Anaesthesia: NotRequired[str]
 
     # Time tags
-    TimeZero: NotRequired[str]
     InjectionEnd: NotRequired[float]
     ScanDate: NotRequired[str]  # DEPRECATED
 
     # Reconstruction tags
     AcquisitionMode: NotRequired[str]
-    ImageDecayCorrected: NotRequired[bool]
-    ImageDecayCorrectionTime: NotRequired[float]
     ReconMethodName: NotRequired[str]
     ReconMethodParameterLabels: NotRequired[list[str]]
     ReconMethodParameterUnits: NotRequired[list[str]]
@@ -155,7 +155,7 @@ def get_hhmmss(
 
     if event == "ImageDecayCorrectionTime" and not json_dict["ImageDecayCorrected"]:
         raise ValueError("Image is not decay corrected")
-    
+
     # ScanStart, InjectionStart, ImageDecayCorrectionTime are all relative to
     # TimeZero, in seconds
 

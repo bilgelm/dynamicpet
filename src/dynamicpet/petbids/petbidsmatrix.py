@@ -88,13 +88,8 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
             ValueError: PETBIDSMatrices are from different radionuclides
             NotImplementedError: decay correction times are different
         """
-        if (
-            self.json_dict["TracerRadionuclide"]
-            != other.json_dict["TracerRadionuclide"]
-        ):
-            raise ValueError("Cannot concatenate data from different radionuclides")
-
-        # check decay correction
+        offset = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=offset)
 
         concat_mat = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_mat)
@@ -102,6 +97,35 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         concat_res = PETBIDSMatrix(concat_mat.dataobj, json_dict)
 
         return concat_res
+
+    def decay_correct(self, decaycorrecttime: float = 0) -> "PETBIDSMatrix":
+        """Return decay corrected PETBIDSMatrix.
+
+        Args:
+            decaycorrecttime: time to decay correct to, relative to time zero
+        """
+        tacs = self.get_decay_corrected_tacs(decaycorrecttime)
+        corrected_tacs = np.reshape(tacs, self.shape)
+
+        json_dict = self.json_dict
+        json_dict["ImageDecayCorrected"] = True
+        json_dict["ImageDecayCorrectionTime"] = (
+            decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
+        )
+
+        return PETBIDSMatrix(corrected_tacs, json_dict)
+
+    def decay_uncorrect(self) -> "PETBIDSMatrix":
+        """Return decay uncorrected PETBIDSMatrix."""
+        tacs = self.get_decay_uncorrected_tacs()
+        uncorrected_tacs = np.reshape(tacs, self.shape)
+
+        json_dict = self.json_dict
+        json_dict["ImageDecayCorrected"] = False
+        # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
+        # do anything about it
+
+        return PETBIDSMatrix(uncorrected_tacs, json_dict)
 
     def to_filename(self, filename: str | PathLike[str]) -> None:
         """Save to file.

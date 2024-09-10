@@ -24,11 +24,14 @@ def pm() -> PETBIDSMatrix:
     frame_duration: NDArray[np.int16] = frame_end - frame_start
 
     json_dict: PetBidsJson = {
+        "TimeZero": "10:00:00",
         "FrameTimesStart": frame_start.tolist(),
         "FrameDuration": frame_duration.tolist(),
         "InjectionStart": 0,
         "ScanStart": 0,
         "TracerRadionuclide": "C11",
+        "ImageDecayCorrected": True,
+        "ImageDecayCorrectionTime": 0,
     }
 
     return PETBIDSMatrix(dataobj, json_dict)
@@ -56,3 +59,35 @@ def test_file_io(pm: PETBIDSMatrix, tmp_path: Path) -> None:
     assert np.allclose(pm.frame_duration, pm.frame_duration)
     assert pm.elem_names == pm2.elem_names
     assert np.allclose(pm.dataobj, pm2.dataobj)
+
+
+def test_decay_correct0_corrected(pm: PETBIDSMatrix) -> None:
+    """Test if decay correction on an already corrected TACs does nothing."""
+    pm2 = pm.decay_correct()
+    assert np.allclose(pm.dataobj, pm2.dataobj)
+    assert np.all(pm.frame_start == pm2.frame_start)
+    assert np.all(pm.frame_end == pm2.frame_end)
+
+
+def test_decay_correct_corrected(pm: PETBIDSMatrix) -> None:
+    """Test if decay correct-uncorrect-correct yields same result."""
+    pm2 = pm.decay_correct(-100)
+    assert not np.allclose(pm.dataobj, pm2.dataobj)
+    assert np.all(pm.frame_start == pm2.frame_start)
+    assert np.all(pm.frame_end == pm2.frame_end)
+
+
+def test_decay_correct_uncorrect_correct(pm: PETBIDSMatrix) -> None:
+    """Test if decay correct-uncorrect-correct yields same result."""
+    pm2 = pm.decay_correct(-100).decay_uncorrect().decay_correct(0)
+    assert np.allclose(pm.dataobj, pm2.dataobj)
+    assert np.all(pm.frame_start == pm2.frame_start)
+    assert np.all(pm.frame_end == pm2.frame_end)
+
+
+def test_decay_uncorrect_correct(pm: PETBIDSMatrix) -> None:
+    """Test if decay uncorrection then correction yields same result."""
+    pm2 = pm.decay_uncorrect().decay_correct()
+    assert np.allclose(pm.dataobj, pm2.dataobj)
+    assert np.all(pm.frame_start == pm2.frame_start)
+    assert np.all(pm.frame_end == pm2.frame_end)

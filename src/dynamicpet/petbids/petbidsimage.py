@@ -14,7 +14,6 @@ from ..temporalobject.temporalimage import image_maker
 from ..typing_utils import RealNumber
 from .petbidsjson import PetBidsJson
 from .petbidsjson import get_frametiming_in_mins
-from .petbidsjson import get_hhmmss
 from .petbidsjson import read_json
 from .petbidsjson import update_frametiming_from
 from .petbidsjson import write_json
@@ -78,38 +77,8 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
             ValueError: PETBIDSImages are from different radionuclides
             NotImplementedError: decay correction times are different
         """
-        if (
-            self.json_dict["TracerRadionuclide"]
-            != other.json_dict["TracerRadionuclide"]
-        ):
-            raise ValueError("Cannot concatenate data from different radionuclides")
-
-        # check scan start times
-        if get_hhmmss(self.json_dict, "ScanStart") >= get_hhmmss(
-            other.json_dict, "ScanStart"
-        ):
-            raise ValueError("Scan times are incompatible")
-
-        # check decay correction
-        # this_decaycorrtime = get_decaycorr_rel_to_scanstart(self.json_dict)
-        # other_decaycorrtime = get_decaycorr_rel_to_scanstart(other.json_dict)
-        # if this_decaycorrtime != other_decaycorrtime + self.total_duration:
-        #     # need to change other's decay correction to match this one's
-        #     other.decay_correct(
-        #       decaycorrecttime=-(other_decaycorrtime + self.total_duration)
-        #     )
-
-        this_decaycorrtime = get_hhmmss(self.json_dict, "ImageDecayCorrectionTime")
-        other_decaycorrtime = get_hhmmss(other.json_dict, "ImageDecayCorrectionTime")
-        if this_decaycorrtime != other_decaycorrtime:
-            # need to change other's decay correction to match this one's
-            offset = (
-                3600 * (this_decaycorrtime.hour - other_decaycorrtime.hour)
-                + 60 * (this_decaycorrtime.minute - other_decaycorrtime.minute)
-                + this_decaycorrtime.second
-                - other_decaycorrtime.second
-            )
-            other.decay_correct(decaycorrecttime=offset)
+        offset = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=offset)
 
         concat_img = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_img)
@@ -126,7 +95,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         """
         tacs = self.get_decay_corrected_tacs(decaycorrecttime)
         # Create a SpatialImage of the same class as self.img
-        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
+        uncorrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
         json_dict = self.json_dict
         json_dict["ImageDecayCorrected"] = True
@@ -134,7 +103,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
             decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
         )
 
-        return PETBIDSImage(corrected_img, json_dict)
+        return PETBIDSImage(uncorrected_img, json_dict)
 
     def decay_uncorrect(self) -> "PETBIDSImage":
         """Return decay uncorrected PETBIDSImage."""
