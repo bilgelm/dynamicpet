@@ -6,6 +6,7 @@ defined here.
 It might be useful to make this into its own class in the future.
 """
 
+import datetime
 import os.path as op
 import warnings
 from copy import deepcopy
@@ -13,6 +14,7 @@ from json import dump as json_dump
 from json import load as json_load
 from os import PathLike
 from typing import Any
+from typing import Literal
 from typing import NotRequired
 from typing import TypedDict
 
@@ -130,6 +132,52 @@ class PetBidsJson(TypedDict):
     TaskDescription: NotRequired[str]
     Instructions: NotRequired[str]
     TaskName: NotRequired[str]
+
+
+def get_hhmmss(
+    json_dict: PetBidsJson,
+    event: Literal["ScanStart", "InjectionStart", "ImageDecayCorrectionTime"],
+) -> datetime.time:
+    """Get event time in HH:MM:SS.
+
+    Args:
+        json_dict: json dictionary
+        event: event whose time to get in HH:MM:SS
+
+    Returns:
+        event time
+
+    Raises:
+        ValueError: image is not decay corrected
+    """
+    # convert TimeZero to date
+    timezero = datetime.datetime.strptime(json_dict["TimeZero"], "%H:%M:%S")
+
+    if event == "ImageDecayCorrectionTime" and not json_dict["ImageDecayCorrected"]:
+        raise ValueError("Image is not decay corrected")
+    
+    # ScanStart, InjectionStart, ImageDecayCorrectionTime are all relative to
+    # TimeZero, in seconds
+
+    offset = json_dict[event]
+    scanstart: datetime.datetime = timezero + datetime.timedelta(seconds=offset)
+
+    return scanstart.time()
+
+
+# def get_decaycorr_rel_to_scanstart(json_dict: PetBidsJson) -> float:
+#     """Get an anchor time point for decay correction relative to scan start.
+
+#     Args:
+#         json_dict: json dictionary to be updated
+
+#     Raises:
+#         ValueError: image is not decay corrected
+#     """
+#     if json_dict["ImageDecayCorrected"]:
+#         return json_dict["ImageDecayCorrectionTime"] - json_dict["ScanStart"]
+#     else:
+#         raise ValueError("Image is not decay corrected")
 
 
 def update_frametiming_from(

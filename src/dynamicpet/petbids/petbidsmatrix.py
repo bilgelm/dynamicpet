@@ -86,12 +86,15 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Raises:
             ValueError: PETBIDSMatrices are from different radionuclides
+            NotImplementedError: decay correction times are different
         """
         if (
             self.json_dict["TracerRadionuclide"]
             != other.json_dict["TracerRadionuclide"]
         ):
             raise ValueError("Cannot concatenate data from different radionuclides")
+
+        # check decay correction
 
         concat_mat = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_mat)

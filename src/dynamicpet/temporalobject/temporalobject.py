@@ -72,9 +72,14 @@ class TemporalObject(Generic[T], ABC):
         """Get the ending time of last frame."""
         return float(self.frame_end[-1])
 
+    @property
+    def total_duration(self) -> float:
+        """Get total scan duration (including any gaps)."""
+        return self.end_time - self.start_time
+
     def has_gaps(self) -> bool:
         """Check if there are any time gaps between frames."""
-        return self.end_time - self.start_time > float(sum(self.frame_duration))
+        return self.total_duration > float(sum(self.frame_duration))
 
     def get_idx_extract_time(
         self, start_time: RealNumber, end_time: RealNumber
