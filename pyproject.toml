@@ -63,6 +63,11 @@ sphinx-click = ">=4.4.0"
 requests = ">=2.31.0"
 types-requests = ">=2.31.0.2"
 
+
+[tool.poetry.group.userstories.dependencies]
+nilearn = "^0.10.4"
+matplotlib = "^3.9.2"
+
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
 tests = ["tests", "*/tests"]
