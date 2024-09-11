@@ -6,6 +6,7 @@ from nibabel.nifti1 import Nifti1Image
 from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 
+from dynamicpet.kineticmodel.logan import LoganPlot
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
 from dynamicpet.temporalobject import TemporalImage
@@ -103,3 +104,13 @@ def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> No
     bp_img: SpatialImage = km.get_parameter("bp")  # type: ignore
 
     assert np.allclose(dvr_img.get_fdata(), bp_img.get_fdata() + 1)
+
+
+def test_loganplot(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
+    """Test Logan Plot using TemporalImage."""
+    km = LoganPlot(reftac, tacs_img)
+    km.fit(integration_type="trapz")
+    # fitted_tacs = km.fitted_tacs()
+
+    dvr_img: SpatialImage = km.get_parameter("dvr")  # type: ignore
+    assert dvr_img.shape == (1, 1, 2)
