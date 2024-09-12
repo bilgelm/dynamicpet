@@ -66,6 +66,7 @@ myst-nb = "^1.1.1"
 matplotlib = "^3.9.2"
 matplotlib-stubs = "^0.2.0"
 nilearn = "^0.10.4"
+jupytext = "^1.16.4"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
