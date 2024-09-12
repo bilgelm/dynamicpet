@@ -30,4 +30,5 @@ caption: Notebooks:
 ---
 
 notebooks/basics
+notebooks/denoise
 ```
