@@ -62,17 +62,10 @@ typeguard = ">=4.0.0rc1"
 sphinx-click = ">=4.4.0"
 requests = ">=2.31.0"
 types-requests = ">=2.31.0.2"
-
-
-[tool.poetry.group.userstories.dependencies]
-jupyter = "^1.1.1"
-ipykernel = "^6.29.5"
+myst-nb = "^1.1.1"
 matplotlib = "^3.9.2"
-nilearn = "^0.10.4"
-jupyter-contrib-nbextensions = "^0.7.0"
-jupyterlab = "^4.2.5"
-lckr-jupyterlab-variableinspector = "^3.2.4"
 matplotlib-stubs = "^0.2.0"
+nilearn = "^0.10.4"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]

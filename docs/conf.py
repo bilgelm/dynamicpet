@@ -7,7 +7,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_click",
-    "myst_parser",
+    "myst_nb",
 ]
 autodoc_typehints = "description"
 autosummary_generate = True
