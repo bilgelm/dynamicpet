@@ -157,7 +157,7 @@ def safety(session: Session) -> None:
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
@@ -170,7 +170,7 @@ def mypy(session: Session) -> None:
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
@@ -198,7 +198,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
@@ -216,7 +216,7 @@ def xdoctest(session: Session) -> None:
         if "FORCE_COLOR" in os.environ:
             args.append("--colored=1")
 
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
@@ -231,7 +231,7 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
@@ -252,7 +252,7 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    if os.getenv("GITHUB_ACTIONS"):
+    if os.getenv("GITHUB_ACTIONS") and os.name != "nt":
         session.install(".[kinfitr]")
     else:
         session.install(".")
