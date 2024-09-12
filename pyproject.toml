@@ -62,6 +62,11 @@ typeguard = ">=4.0.0rc1"
 sphinx-click = ">=4.4.0"
 requests = ">=2.31.0"
 types-requests = ">=2.31.0.2"
+myst-nb = "^1.1.1"
+matplotlib = "^3.9.2"
+matplotlib-stubs = "^0.2.0"
+nilearn = "^0.10.4"
+jupytext = "^1.16.4"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -74,7 +79,7 @@ omit = ["src/dynamicpet/kineticmodel/kinfitr.py"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 75
+fail_under = 80
 
 [tool.isort]
 profile = "black"
