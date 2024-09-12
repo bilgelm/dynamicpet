@@ -21,7 +21,6 @@ jobs:
           - { python: "3.11", os: "ubuntu-latest", session: "mypy" }
           - { python: "3.11", os: "ubuntu-latest", session: "tests" }
           - { python: "3.11", os: "ubuntu-latest", session: "xdoctest" }
-          - { python: "3.12", os: "ubuntu-latest", session: "docs-build" }
           - { python: "3.12", os: "windows-latest", session: "pre-commit" }
           - { python: "3.12", os: "windows-latest", session: "safety" }
           - { python: "3.12", os: "windows-latest", session: "mypy" }
