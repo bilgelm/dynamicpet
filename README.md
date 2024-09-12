@@ -53,11 +53,6 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 `nibabel` for neuroimaging data I/O and simple manipulations, and
 `click` for the CLI.
 
-To run the `kinfitr` implementations of kinetic models, you will also need an
-installation of R and the [kinfitr] R package as well as the `rpy2` Python module.
-
-[kinfitr]: https://github.com/mathesong/kinfitr
-
 ## Installation
 
 You can install _Dynamic PET_ via [pip] after cloning the repository:
@@ -66,18 +61,6 @@ You can install _Dynamic PET_ via [pip] after cloning the repository:
 $ git clone https://github.com/bilgelm/dynamicpet.git
 $ pip install -e dynamicpet
 ```
-
-If you would like to use kinetic models implemented in `kinfitr` with
-_Dynamic PET_, first [install R](https://cran.r-project.org)
-and the [kinfitr] R package.
-Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git`
-repository as descibed above:
-
-```console
-$ pip install -e dynamicpet[kinfitr]
-```
-
-[kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Usage
 

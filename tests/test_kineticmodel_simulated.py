@@ -268,30 +268,3 @@ def test_srtmlammertsma1996_tm(
     assert np.allclose(bp, bp_true, rtol=relative_tol)
     assert np.allclose(r1, r1_true, rtol=relative_tol)
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=relative_tol)
-
-
-def test_srtmkinfitr_tm(
-    frame_start: NDArray[np.double],
-    frame_duration: NDArray[np.double],
-) -> None:
-    """Test kinfitr SRTM wrapper."""
-    kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
-
-    bp_true = 1.5
-    r1_true = 1.2
-    ct, cref = get_tacs_and_reftac_dataobj(
-        frame_start, frame_duration, bp_true, r1_true
-    )
-
-    tac = TemporalMatrix(ct, frame_start, frame_duration)
-    reftac = TemporalMatrix(cref, frame_start, frame_duration)
-
-    km = kinfitr.SRTM(reftac, tac)
-    km.fit()
-
-    bp: NumpyRealNumberArray = km.get_parameter("bp")
-    r1: NumpyRealNumberArray = km.get_parameter("R1")
-
-    relative_tol = 0.006
-    assert np.allclose(bp, bp_true, rtol=relative_tol)
-    assert np.allclose(r1, r1_true, rtol=relative_tol)
