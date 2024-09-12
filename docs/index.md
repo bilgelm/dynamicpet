@@ -21,5 +21,13 @@ contributing
 Code of Conduct <codeofconduct>
 License <license>
 Changelog <https://github.com/bilgelm/dynamicpet/releases>
-notebooks/example
+```
+
+```{toctree}
+---
+maxdepth: 1
+caption: Notebooks:
+---
+
+notebooks/basics
 ```
