@@ -29,5 +29,5 @@ maxdepth: 1
 caption: Notebooks:
 ---
 
-notebooks/pet_info
+notebooks/basics
 ```

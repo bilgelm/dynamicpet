@@ -219,12 +219,16 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    session.install(".")
+    session.install(".[kinfitr]")
     session.install("sphinx-click", "furo", "myst_nb", "matplotlib", "nilearn")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
         shutil.rmtree(build_dir)
+
+    jupyter_dir = Path("docs", "jupyter_execute")
+    if jupyter_dir.exists():
+        shutil.rmtree(jupyter_dir)
 
     session.run("sphinx-build", *args)
 
