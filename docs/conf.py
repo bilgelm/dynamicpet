@@ -12,3 +12,4 @@ extensions = [
 autodoc_typehints = "description"
 autosummary_generate = True
 html_theme = "furo"
+nb_execution_timeout = -1
