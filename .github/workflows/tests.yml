@@ -46,17 +46,17 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up R
+      - name: Set up R if not on Windows
         if: matrix.os != 'windows-latest'
         uses: r-lib/actions/setup-r@v2
 
-      - name: Install remotes R package
-        if: matrix.os != 'windows-latest'
+      - name: Install remotes R package if on MacOS
+        if: matrix.os == 'macos-latest'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: remotes
 
-      - name: Install kinfitr
+      - name: Install kinfitr if on MacOS
         if: matrix.os == 'macos-latest'
         run: |
           Rscript -e "remotes::install_url('https://github.com/mathesong/kinfitr/archive/refs/tags/v0.8.0.tar.gz')"
@@ -125,6 +125,7 @@ jobs:
         with:
           name: coverage-data
           path: ".coverage.*"
+          include-hidden-files: true
 
       - name: Upload documentation
         if: matrix.session == 'docs-build'
