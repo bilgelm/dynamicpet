@@ -1,3 +1,5 @@
 furo
 sphinx-click
 myst_nb
+matplotlib
+nilearn

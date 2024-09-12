@@ -4419,4 +4419,4 @@ kinfitr = ["rpy2"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "0c822be10a854d33d42cf08cf921ab1904351857affa58c04d046294a50c4e14"
+content-hash = "b908efa38fa479709c83ec41cff35fb8898c9a6694e6ec284b7aa9def90f84e8"

@@ -63,9 +63,7 @@ sphinx-click = ">=4.4.0"
 requests = ">=2.31.0"
 types-requests = ">=2.31.0.2"
 myst-nb = "^1.1.1"
-
-
-[tool.poetry.group.userstories.dependencies]
+matplotlib = "^3.9.2"
 matplotlib-stubs = "^0.2.0"
 nilearn = "^0.10.4"
 jupytext = "^1.16.4"
