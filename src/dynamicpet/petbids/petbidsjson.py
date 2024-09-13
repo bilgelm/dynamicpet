@@ -165,7 +165,7 @@ def get_hhmmss(
     return scanstart.time()
 
 
-def _timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
+def timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
     """Get difference in seconds between two datetime.time objects HH:MM:SS."""
     td = (
         3600 * (firsttime.hour - secondtime.hour)
@@ -174,21 +174,6 @@ def _timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
         - secondtime.second
     )
     return td
-
-
-# def get_decaycorr_rel_to_scanstart(json_dict: PetBidsJson) -> float:
-#     """Get an anchor time point for decay correction relative to scan start.
-
-#     Args:
-#         json_dict: json dictionary to be updated
-
-#     Raises:
-#         ValueError: image is not decay corrected
-#     """
-#     if json_dict["ImageDecayCorrected"]:
-#         return json_dict["ImageDecayCorrectionTime"] - json_dict["ScanStart"]
-#     else:
-#         raise ValueError("Image is not decay corrected")
 
 
 def update_frametiming_from(
@@ -223,8 +208,6 @@ def get_frametiming_in_mins(
     seconds. This corresponds to DICOM Tag (0018,1042) converted to seconds
     relative to TimeZero.
     At least one of ScanStart and InjectionStart should be 0.
-    If ScanStart is 0, FrameTimesStart are shifted so that outputs are relative
-    to injection start.
     This method does not check if the FrameTimesStart and FrameDuration entries
     in the json file are sensible.
 
@@ -247,15 +230,14 @@ def get_frametiming_in_mins(
 
     inj_start: float = json_dict["InjectionStart"]
     scan_start: float = json_dict["ScanStart"]
-    if inj_start == 0:
-        pass
-    elif scan_start == 0:
-        if frame_start[-1] + frame_duration[-1] < inj_start:
-            warnings.warn("No data acquired after injection", stacklevel=2)
-        frame_start -= inj_start
-    else:
+    if not (inj_start == 0 or scan_start == 0):
         # invalid PET BIDS json
         raise ValueError("Neither InjectionStart nor ScanStart is 0")
+
+    if frame_start[0] < scan_start:
+        raise ValueError("First time frame starts before ScanStart")
+    if frame_start[-1] + frame_duration[-1] < inj_start:
+        warnings.warn("No data acquired after injection", stacklevel=2)
 
     # convert seconds to minutes
     return frame_start / 60, frame_duration / 60

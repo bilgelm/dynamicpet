@@ -91,3 +91,18 @@ def test_decay_uncorrect_correct(pm: PETBIDSMatrix) -> None:
     assert np.allclose(pm.dataobj, pm2.dataobj)
     assert np.all(pm.frame_start == pm2.frame_start)
     assert np.all(pm.frame_end == pm2.frame_end)
+
+
+def test_set_timezero(pm: PETBIDSMatrix) -> None:
+    """Test setting time zero to InjectionStart then back to ScanStart."""
+    pm.json_dict["InjectionStart"] = -3600
+
+    pm.set_timezero("InjectionStart")
+    assert pm.json_dict["InjectionStart"] == 0
+    assert pm.json_dict["ScanStart"] == 3600
+    assert pm.frame_start[0] == 60
+
+    pm.set_timezero("ScanStart")
+    assert pm.json_dict["ScanStart"] == 0
+    assert pm.json_dict["InjectionStart"] == -3600
+    assert pm.frame_start[0] == 0

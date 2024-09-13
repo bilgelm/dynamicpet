@@ -54,7 +54,6 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         # need to make a copy of json_dict before storing
         self.json_dict: PetBidsJson = deepcopy(json_dict)
-        self.set_timezero(anchor="InjectionStart")
 
     # def get_elem(self, elem: str) -> "PETBIDSMatrix":
     #     """Get timeseries data for a specific element."""
@@ -65,8 +64,8 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         """Extract a temporally shorter PETBIDSMatrix from a PETBIDSMatrix.
 
         Args:
-            start_time: time at which to begin, inclusive (minute post-injection)
-            end_time: time at which to stop, inclusive (minute post-injection)
+            start_time: time (min) at which to begin relative to TimeZero, incl.
+            end_time: time (min) at which to stop relative to TimeZero, incl.
 
         Returns:
             extracted_img: extracted PETBIDSMatrix
@@ -86,13 +85,14 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         Returns:
             concatenated PETBIDSMatrix
         """
-        offset = self._decay_correct_offset(other)
+        offset, original_anchor = self._decay_correct_offset(other)
         other = other.decay_correct(decaycorrecttime=offset)
 
         concat_mat = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_mat)
 
         concat_res = PETBIDSMatrix(concat_mat.dataobj, json_dict)
+        concat_res.set_timezero(anchor=original_anchor)
 
         return concat_res
 
