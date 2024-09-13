@@ -40,7 +40,7 @@ class TemporalObject(Generic[T], ABC):
     @property
     def shape(self) -> tuple[int, ...]:
         """Get shape of dataobj."""
-        return self.dataobj.shape  # type: ignore
+        return self.dataobj.shape
 
     @property
     def num_elements(self) -> int:

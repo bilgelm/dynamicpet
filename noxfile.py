@@ -170,7 +170,7 @@ def tests(session: Session) -> None:
     session.install(".")
     session.install("coverage[toml]", "pytest", "pytest-mock", "pygments", "requests")
     try:
-        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+        session.run("coverage", "run", "-p", "-m", "pytest", *session.posargs)
     finally:
         if session.interactive:
             session.notify("coverage", posargs=[])
@@ -220,11 +220,15 @@ def docs_build(session: Session) -> None:
         args.insert(0, "--color")
 
     session.install(".")
-    session.install("sphinx", "sphinx-click", "furo", "myst-parser")
+    session.install("sphinx-click", "furo", "myst_nb", "matplotlib", "nilearn")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
         shutil.rmtree(build_dir)
+
+    jupyter_dir = Path("docs", "jupyter_execute")
+    if jupyter_dir.exists():
+        shutil.rmtree(jupyter_dir)
 
     session.run("sphinx-build", *args)
 
@@ -234,7 +238,9 @@ def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
     session.install(".")
-    session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
+    session.install(
+        "sphinx-autobuild", "sphinx-click", "furo", "myst_nb", "matplotlib", "nilearn"
+    )
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():

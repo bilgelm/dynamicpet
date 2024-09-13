@@ -9,6 +9,7 @@ from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 from scipy.integrate import odeint  # type: ignore
 
+from dynamicpet.kineticmodel.logan import LRTM
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.temporalobject import TemporalImage
@@ -270,13 +271,11 @@ def test_srtmlammertsma1996_tm(
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=relative_tol)
 
 
-def test_srtmkinfitr_tm(
+def test_lrtm_tm(
     frame_start: NDArray[np.double],
     frame_duration: NDArray[np.double],
 ) -> None:
-    """Test kinfitr SRTM wrapper."""
-    kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
-
+    """Test Logan 1996 calculation using TemporalMatrix."""
     bp_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
@@ -286,12 +285,12 @@ def test_srtmkinfitr_tm(
     tac = TemporalMatrix(ct, frame_start, frame_duration)
     reftac = TemporalMatrix(cref, frame_start, frame_duration)
 
-    km = kinfitr.SRTM(reftac, tac)
-    km.fit()
+    km = LRTM(reftac, tac)
+    # because of the way data were simulated, we need to use trapz integration
+    # to fit to obtain the best possible recovery of true values
+    km.fit(integration_type="trapz")
 
-    bp: NumpyRealNumberArray = km.get_parameter("bp")
-    r1: NumpyRealNumberArray = km.get_parameter("R1")
+    bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
 
-    relative_tol = 0.006
+    relative_tol = 0.02  # .02 means that 2% error is tolerated
     assert np.allclose(bp, bp_true, rtol=relative_tol)
-    assert np.allclose(r1, r1_true, rtol=relative_tol)
