@@ -136,7 +136,13 @@ class PetBidsJson(TypedDict):
 
 def get_hhmmss(
     json_dict: PetBidsJson,
-    event: Literal["ScanStart", "InjectionStart", "ImageDecayCorrectionTime"],
+    event: Literal[
+        "ScanStart",
+        "InjectionStart",
+        "ImageDecayCorrectionTime",
+        "FirstFrameStart",
+        "TimeZero",
+    ],
 ) -> datetime.time:
     """Get event time in HH:MM:SS.
 
@@ -152,14 +158,18 @@ def get_hhmmss(
     """
     # convert TimeZero to date
     timezero = datetime.datetime.strptime(json_dict["TimeZero"], "%H:%M:%S")
+    if event == "TimeZero":
+        return timezero.time()
 
     if event == "ImageDecayCorrectionTime" and not json_dict["ImageDecayCorrected"]:
         raise ValueError("Image is not decay corrected")
 
-    # ScanStart, InjectionStart, ImageDecayCorrectionTime are all relative to
-    # TimeZero, in seconds
-
-    offset = json_dict[event]
+    # ScanStart, InjectionStart, ImageDecayCorrectionTime, FrameTimesStart are
+    # all relative to TimeZero, in seconds
+    if event == "FirstFrameStart":
+        offset = json_dict["FrameTimesStart"][0]
+    else:
+        offset = json_dict[event]
     scanstart: datetime.datetime = timezero + datetime.timedelta(seconds=offset)
 
     return scanstart.time()

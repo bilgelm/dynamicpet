@@ -85,8 +85,8 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         Returns:
             concatenated PETBIDSMatrix
         """
-        offset, original_anchor = self._decay_correct_offset(other)
-        other = other.decay_correct(decaycorrecttime=offset)
+        newdecaycorrecttime, original_anchor = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=newdecaycorrecttime)
 
         concat_mat = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_mat)
@@ -108,7 +108,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         tacs = self.get_decay_corrected_tacs(decaycorrecttime)
         corrected_tacs = np.reshape(tacs, self.shape)
 
-        json_dict = self.json_dict
+        json_dict = deepcopy(self.json_dict)
         json_dict["ImageDecayCorrected"] = True
         json_dict["ImageDecayCorrectionTime"] = (
             decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
@@ -121,7 +121,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         tacs = self.get_decay_uncorrected_tacs()
         uncorrected_tacs = np.reshape(tacs, self.shape)
 
-        json_dict = self.json_dict
+        json_dict = deepcopy(self.json_dict)
         json_dict["ImageDecayCorrected"] = False
         # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
         # do anything about it

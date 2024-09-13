@@ -74,8 +74,8 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         Returns:
             concatenated PETBIDSImage
         """
-        offset, original_anchor = self._decay_correct_offset(other)
-        other = other.decay_correct(decaycorrecttime=offset)
+        newdecaycorrecttime, original_anchor = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=newdecaycorrecttime)
 
         concat_img = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_img)
@@ -102,7 +102,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         # Create a SpatialImage of the same class as self.img
         uncorrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
-        json_dict = self.json_dict
+        json_dict = deepcopy(self.json_dict)
         json_dict["ImageDecayCorrected"] = True
         json_dict["ImageDecayCorrectionTime"] = (
             decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
@@ -114,14 +114,14 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         """Return decay uncorrected PETBIDSImage."""
         tacs = self.get_decay_uncorrected_tacs()
         # Create a SpatialImage of the same class as self.img
-        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
+        uncorrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
-        json_dict = self.json_dict
+        json_dict = deepcopy(self.json_dict)
         json_dict["ImageDecayCorrected"] = False
         # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
         # do anything about it
 
-        return PETBIDSImage(corrected_img, json_dict)
+        return PETBIDSImage(uncorrected_img, json_dict)
 
     def to_filename(
         self,

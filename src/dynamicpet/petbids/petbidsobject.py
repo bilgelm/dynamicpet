@@ -117,7 +117,8 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
             other: PETBIDSObject to be adjusted, if needed
 
         Returns:
-            offset: time offset in seconds
+            newdecaycorrecttime: new decay correction time relative to time zero
+                                 of self, in seconds
             original_anchor: anchor time of self
 
         Raises:
@@ -138,14 +139,10 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
             raise ValueError("Injection times are incompatible")
 
         # - check scan timing
-        this_scanstart = get_hhmmss(self.json_dict, "ScanStart")
-        other_scanstart = get_hhmmss(other.json_dict, "ScanStart")
-        if timediff(other_scanstart, this_scanstart) <= self.total_duration:
+        this_firstframestart = get_hhmmss(self.json_dict, "FirstFrameStart")
+        other_firstframestart = get_hhmmss(other.json_dict, "FirstFrameStart")
+        if timediff(other_firstframestart, this_firstframestart) <= self.total_duration:
             raise ValueError("Scan times are incompatible")
-
-        this_decaycorrtime = get_hhmmss(self.json_dict, "ImageDecayCorrectionTime")
-        other_decaycorrtime = get_hhmmss(other.json_dict, "ImageDecayCorrectionTime")
-        offset = timediff(this_decaycorrtime, other_decaycorrtime)
 
         original_anchor: Literal["InjectionStart", "ScanStart"]
         if self.json_dict["InjectionStart"] == 0:
@@ -156,4 +153,5 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
 
         other.set_timezero(anchor="InjectionStart")
 
-        return offset, original_anchor
+        newdecaycorrecttime = self.json_dict["ImageDecayCorrectionTime"]
+        return newdecaycorrecttime, original_anchor

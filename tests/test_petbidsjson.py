@@ -16,13 +16,14 @@ def test_get_hhmmss_scanstart0() -> None:
         "TimeZero": "10:00:00",
         "InjectionStart": -120,
         "ScanStart": 0,
-        "FrameTimesStart": [0, 120, 240],
+        "FrameTimesStart": [60, 180, 300],
         "FrameDuration": [120, 120, 120],
         "TracerRadionuclide": "C11",
         "ImageDecayCorrected": True,
         "ImageDecayCorrectionTime": -60,
     }
     assert "10:00:00" == get_hhmmss(my_json_dict, "ScanStart").isoformat()
+    assert "10:01:00" == get_hhmmss(my_json_dict, "FirstFrameStart").isoformat()
     assert "09:58:00" == get_hhmmss(my_json_dict, "InjectionStart").isoformat()
     assert (
         "09:59:00" == get_hhmmss(my_json_dict, "ImageDecayCorrectionTime").isoformat()
@@ -35,13 +36,14 @@ def test_get_hhmmss_injstart0() -> None:
         "TimeZero": "09:58:00",
         "InjectionStart": 0,
         "ScanStart": 120,
-        "FrameTimesStart": [0, 120, 240],
+        "FrameTimesStart": [180, 300, 420],
         "FrameDuration": [120, 120, 120],
         "TracerRadionuclide": "C11",
         "ImageDecayCorrected": True,
         "ImageDecayCorrectionTime": 60,
     }
     assert "10:00:00" == get_hhmmss(my_json_dict, "ScanStart").isoformat()
+    assert "10:01:00" == get_hhmmss(my_json_dict, "FirstFrameStart").isoformat()
     assert "09:58:00" == get_hhmmss(my_json_dict, "InjectionStart").isoformat()
     assert (
         "09:59:00" == get_hhmmss(my_json_dict, "ImageDecayCorrectionTime").isoformat()
