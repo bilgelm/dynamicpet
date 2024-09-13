@@ -4,6 +4,7 @@ import csv
 import os.path as op
 from copy import deepcopy
 from os import PathLike
+from typing import Literal
 
 import numpy as np
 
@@ -53,6 +54,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         # need to make a copy of json_dict before storing
         self.json_dict: PetBidsJson = deepcopy(json_dict)
+        self.set_timezero(anchor="InjectionStart")
 
     # def get_elem(self, elem: str) -> "PETBIDSMatrix":
     #     """Get timeseries data for a specific element."""
@@ -63,8 +65,8 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         """Extract a temporally shorter PETBIDSMatrix from a PETBIDSMatrix.
 
         Args:
-            start_time: time at which to begin, inclusive
-            end_time: time at which to stop, inclusive
+            start_time: time at which to begin, inclusive (minute post-injection)
+            end_time: time at which to stop, inclusive (minute post-injection)
 
         Returns:
             extracted_img: extracted PETBIDSMatrix
@@ -83,10 +85,6 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Returns:
             concatenated PETBIDSMatrix
-
-        Raises:
-            ValueError: PETBIDSMatrices are from different radionuclides
-            NotImplementedError: decay correction times are different
         """
         offset = self._decay_correct_offset(other)
         other = other.decay_correct(decaycorrecttime=offset)
@@ -103,6 +101,9 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Args:
             decaycorrecttime: time to decay correct to, relative to time zero
+
+        Returns:
+            decay corrected TACs
         """
         tacs = self.get_decay_corrected_tacs(decaycorrecttime)
         corrected_tacs = np.reshape(tacs, self.shape)
@@ -127,15 +128,23 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         return PETBIDSMatrix(uncorrected_tacs, json_dict)
 
-    def to_filename(self, filename: str | PathLike[str]) -> None:
+    def to_filename(
+        self,
+        filename: str | PathLike[str],
+        anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
+    ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the tabular TAC tsv output
+            anchor: time anchor. The corresponding tag in the PET-BIDS json will
+                    be set to zero (with appropriate offsets applied to other
+                    tags).
 
         Raises:
             ValueError: file is not a tsv file
         """
+        self.set_timezero(anchor)
         fbase, fext = op.splitext(filename)
         if fext != ".tsv":
             raise ValueError("output file must be a tsv file")

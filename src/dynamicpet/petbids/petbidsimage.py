@@ -4,6 +4,7 @@ import os.path as op
 from copy import deepcopy
 from os import PathLike
 from typing import Any
+from typing import Literal
 
 import numpy as np
 from nibabel.loadsave import load as nib_load
@@ -47,13 +48,14 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
 
         # need to make a copy of json_dict before storing
         self.json_dict: PetBidsJson = deepcopy(json_dict)
+        self.set_timezero(anchor="InjectionStart")
 
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> "PETBIDSImage":
         """Extract a temporally shorter PETBIDSImage from a PETBIDSImage.
 
         Args:
-            start_time: time at which to begin, inclusive
-            end_time: time at which to stop, inclusive
+            start_time: time at which to begin, inclusive (minute post-injection)
+            end_time: time at which to stop, inclusive (minute post-injection)
 
         Returns:
             extracted_img: extracted PETBIDSImage
@@ -72,10 +74,6 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
 
         Returns:
             concatenated PETBIDSImage
-
-        Raises:
-            ValueError: PETBIDSImages are from different radionuclides
-            NotImplementedError: decay correction times are different
         """
         offset = self._decay_correct_offset(other)
         other = other.decay_correct(decaycorrecttime=offset)
@@ -90,8 +88,15 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
     def decay_correct(self, decaycorrecttime: float = 0) -> "PETBIDSImage":
         """Return decay corrected PETBIDSImage.
 
+        This code is written to work with both ScanStart and InjectionStart as
+        TimeZero anchors, even though the internal representation is always
+        with an InjectionStart anchor.
+
         Args:
             decaycorrecttime: time to decay correct to, relative to time zero
+
+        Returns:
+            decay corrected PET image
         """
         tacs = self.get_decay_corrected_tacs(decaycorrecttime)
         # Create a SpatialImage of the same class as self.img
@@ -118,12 +123,20 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
 
         return PETBIDSImage(corrected_img, json_dict)
 
-    def to_filename(self, filename: str | PathLike[str]) -> None:
+    def to_filename(
+        self,
+        filename: str | PathLike[str],
+        anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
+    ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the PET image output
+            anchor: time anchor. The corresponding tag in the PET-BIDS json will
+                    be set to zero (with appropriate offsets applied to other
+                    tags).
         """
+        self.set_timezero(anchor)
         self.img.to_filename(filename)
 
         fbase, fext = op.splitext(filename)

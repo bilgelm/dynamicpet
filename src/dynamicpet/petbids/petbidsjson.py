@@ -165,6 +165,17 @@ def get_hhmmss(
     return scanstart.time()
 
 
+def _timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
+    """Get difference in seconds between two datetime.time objects HH:MM:SS."""
+    td = (
+        3600 * (firsttime.hour - secondtime.hour)
+        + 60 * (firsttime.minute - secondtime.minute)
+        + firsttime.second
+        - secondtime.second
+    )
+    return td
+
+
 # def get_decaycorr_rel_to_scanstart(json_dict: PetBidsJson) -> float:
 #     """Get an anchor time point for decay correction relative to scan start.
 
