@@ -1,4 +1,5 @@
-furo>=2023.5.20
-sphinx>=7.1.1
+furo
 sphinx-click
-myst_parser==2.0.0
+myst_nb
+matplotlib
+nilearn
