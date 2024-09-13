@@ -36,6 +36,7 @@ Methods implemented in the CLI include:
   - HighlY constrained backPRojection method constraining the backprojections to Local Regions of interest ([HYPR-LR])
 - Reference tissue-based modeling
   - Standardized Uptake Value Ratio (SUVR)
+  - Logan Reference Tissue Model ([LRTM])
   - Simplified Reference Tissue Model (SRTM)
 
 Several implementations of estimating SRTM parameters are available:
@@ -44,6 +45,7 @@ Several implementations of estimating SRTM parameters are available:
 - Two-step SRTM (SRTM2), as described by [Wu and Carson, J Cereb Blood Flow Metab (2002)](https://doi.org/10.1097/01.WCB.0000033967.83623.34)
 - Linear Regression with Spatial Constraint (LRSC), as described by [Zhou et al., Neuroimage (2003)](<https://doi.org/10.1016/S1053-8119(03)00017-X>)
 
+[lrtm]: https://doi.org/10.1097/00004647-199609000-00008
 [hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
 
 ## Requirements
