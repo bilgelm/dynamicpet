@@ -47,7 +47,8 @@
 
 ## dynamicpet.kineticmodel
 
-These kinetic model implementations use the entire temporal extent of the TAC object provided for modeling. If you'd like to use a specific time interval for
+These kinetic model implementations use the entire temporal extent of the TAC
+object provided for modeling. If you'd like to use a specific time interval for
 modeling, first extract this time interval and then fit the kinetic model.
 
 ```{eval-rst}
@@ -58,12 +59,6 @@ modeling, first extract this time interval and then fit the kinetic model.
 
 ```{eval-rst}
 .. automodule:: dynamicpet.kineticmodel.srtm
-   :members:
-   :inherited-members:
-```
-
-```{eval-rst}
-.. automodule:: dynamicpet.kineticmodel.kinfitr
    :members:
    :inherited-members:
 ```

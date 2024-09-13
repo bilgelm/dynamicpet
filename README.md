@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/pypi/l/dynamicpet)][license]
 -->
 
-[![Read the documentation at https://dynamicpet.readthedocs.io/](https://img.shields.io/readthedocs/dynamicpet/latest.svg?label=Read%20the%20Docs)][read the docs]
+[![Read the documentation at https://bilgelm.github.io/dynamicpet](https://github.com/bilgelm/dynamicpet/actions/workflows/pages.yml/badge.svg)][read the docs]
 [![Tests](https://github.com/bilgelm/dynamicpet/workflows/Tests/badge.svg)][tests]
 [![Codecov](https://codecov.io/gh/bilgelm/dynamicpet/branch/main/graph/badge.svg)][codecov]
 
@@ -19,7 +19,7 @@
 [python version]: https://pypi.org/project/dynamicpet
 -->
 
-[read the docs]: https://dynamicpet.readthedocs.io/
+[read the docs]: https://bilgelm.github.io/dynamicpet
 [tests]: https://github.com/bilgelm/dynamicpet/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/bilgelm/dynamicpet
 [pre-commit]: https://github.com/pre-commit/pre-commit
@@ -53,11 +53,6 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 `nibabel` for neuroimaging data I/O and simple manipulations, and
 `click` for the CLI.
 
-To run the `kinfitr` implementations of kinetic models, you will also need an
-installation of R and the [kinfitr] R package as well as the `rpy2` Python module.
-
-[kinfitr]: https://github.com/mathesong/kinfitr
-
 ## Installation
 
 You can install _Dynamic PET_ via [pip] after cloning the repository:
@@ -66,18 +61,6 @@ You can install _Dynamic PET_ via [pip] after cloning the repository:
 $ git clone https://github.com/bilgelm/dynamicpet.git
 $ pip install -e dynamicpet
 ```
-
-If you would like to use kinetic models implemented in `kinfitr` with
-_Dynamic PET_, first [install R](https://cran.r-project.org)
-and the [kinfitr] R package.
-Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git`
-repository as descibed above:
-
-```console
-$ pip install -e dynamicpet[kinfitr]
-```
-
-[kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Usage
 
