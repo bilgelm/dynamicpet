@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/pypi/l/dynamicpet)][license]
 -->
 
-[![Read the documentation at https://dynamicpet.readthedocs.io/](https://img.shields.io/readthedocs/dynamicpet/latest.svg?label=Read%20the%20Docs)][read the docs]
+[![Read the documentation at https://bilgelm.github.io/dynamicpet](https://github.com/bilgelm/dynamicpet/actions/workflows/pages.yml/badge.svg?label=Read%20the%20Docs)][read the docs]
 [![Tests](https://github.com/bilgelm/dynamicpet/workflows/Tests/badge.svg)][tests]
 [![Codecov](https://codecov.io/gh/bilgelm/dynamicpet/branch/main/graph/badge.svg)][codecov]
 
@@ -19,7 +19,7 @@
 [python version]: https://pypi.org/project/dynamicpet
 -->
 
-[read the docs]: https://dynamicpet.readthedocs.io/
+[read the docs]: https://bilgelm.github.io/dynamicpet
 [tests]: https://github.com/bilgelm/dynamicpet/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/bilgelm/dynamicpet
 [pre-commit]: https://github.com/pre-commit/pre-commit
