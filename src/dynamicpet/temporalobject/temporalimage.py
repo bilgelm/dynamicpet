@@ -161,7 +161,7 @@ class TemporalImage(TemporalObject["TemporalImage"]):
         if self.end_time >= other.start_time:
             raise TimingError("TemporalImage being concatenated occurs earlier in time")
 
-        concat_img: SpatialImage = concat_images([self.img, other.img])  # type: ignore
+        concat_img: SpatialImage = concat_images([self.img, other.img], axis=-1)  # type: ignore
         concat_res = TemporalImage(
             concat_img,
             np.concatenate([self.frame_start, other.frame_start]),
