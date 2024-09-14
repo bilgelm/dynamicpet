@@ -32,4 +32,5 @@ caption: Notebooks:
 notebooks/basics
 notebooks/denoise
 notebooks/decay_correct
+notebooks/suvr
 ```
