@@ -8,19 +8,16 @@ https://journals.sagepub.com/doi/epdf/10.1038/jcbfm.1985.87
 
 """
 import numpy as np
-from numpy.linalg import LinAlgError
 from scipy.linalg import solve  # type: ignore
 from tqdm import trange
 
-from ..temporalobject.temporalimage import TemporalImage
 from ..temporalobject.temporalmatrix import TemporalMatrix
 from ..typing_utils import NumpyNumberArray
-from ..typing_utils import NumpyRealNumber
 from .kineticmodel import KineticModel
 
 
 class PATLAK(KineticModel):
-    """ """
+    """Patlak kinetic model implementation."""
 
     @classmethod
     def get_param_names(cls) -> list[str]:
