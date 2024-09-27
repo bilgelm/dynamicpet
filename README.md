@@ -1,4 +1,4 @@
-# Dynamic PET <img src="docs/logo.png" align="right" height="150" />
+# Dynamic PET <img src="docs/logo.png" align="right" height="150" alt="Dynamic PET logo"/>
 
 <!-- [![PyPI](https://img.shields.io/pypi/v/dynamicpet.svg)][pypi_]
 [![Status](https://img.shields.io/pypi/status/dynamicpet.svg)][status]
@@ -34,6 +34,7 @@ Methods implemented in the CLI include:
 
 - Denoising
   - HighlY constrained backPRojection method constraining the backprojections to Local Regions of interest ([HYPR-LR])
+  - Nonlocal EStimation of multispectral MAgnitudes ([NESMA])
 - Reference tissue-based modeling
   - Standardized Uptake Value Ratio (SUVR)
   - Logan Reference Tissue Model ([LRTM])
@@ -47,6 +48,7 @@ Several implementations of estimating SRTM parameters are available:
 
 [lrtm]: https://doi.org/10.1097/00004647-199609000-00008
 [hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
+[nesma]: https://doi.org/10.1111/jon.12537
 
 ## Requirements
 
@@ -60,8 +62,8 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 You can install _Dynamic PET_ via [pip] after cloning the repository:
 
 ```console
-$ git clone https://github.com/bilgelm/dynamicpet.git
-$ pip install -e dynamicpet
+git clone https://github.com/bilgelm/dynamicpet.git
+pip install -e dynamicpet
 ```
 
 ## Usage
@@ -78,13 +80,13 @@ You will then need to create a binary mask that is in the same space as the PET 
 After installing _Dynamic PET_ as described above, execute:
 
 ```console
-$ kineticmodel PET --model SRTMZhou2003 --refmask <REFMASK> --outputdir <OUTPUTDIR> --fwhm 5
+kineticmodel PET --model SRTMZhou2003 --refmask <REFMASK> --outputdir <OUTPUTDIR> --fwhm 5
 ```
 
 where
 
 ```console
-$ PET=<OPENNEURODATA>/ds001705-download/sub-000101/ses-baseline/pet/sub-000101_ses-baseline_pet.nii
+PET=<OPENNEURODATA>/ds001705-download/sub-000101/ses-baseline/pet/sub-000101_ses-baseline_pet.nii
 ```
 
 Before running these commands, replace
