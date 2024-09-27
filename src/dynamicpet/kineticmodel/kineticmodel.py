@@ -110,11 +110,11 @@ class KineticModel(ABC):
             else:
                 param_vector: NumpyNumberArray = self.parameters[param_name]
                 return param_vector
-        elif param_name == "bp" and "dvr" in self.parameters:
-            self.parameters[param_name] = self.parameters["dvr"] - 1
+        elif param_name == "BP_ND" and "DVR" in self.parameters:
+            self.parameters[param_name] = self.parameters["DVR"] - 1
             return self.get_parameter(param_name)
-        elif param_name == "dvr" and "bp" in self.parameters:
-            self.parameters[param_name] = self.parameters["bp"] + 1
+        elif param_name == "DVR" and "BP_ND" in self.parameters:
+            self.parameters[param_name] = self.parameters["BP_ND"] + 1
             return self.get_parameter(param_name)
         else:
             raise AttributeError(

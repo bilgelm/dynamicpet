@@ -30,7 +30,7 @@ class LRTM(KineticModel):
     @classmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
-        return ["dvr"]
+        return ["DVR"]
 
     def fit(  # noqa: max-complexity: 12
         self,
@@ -38,7 +38,7 @@ class LRTM(KineticModel):
         integration_type: INTEGRATION_TYPE_OPTS = "trapz",
         weight_by: WEIGHT_OPTS | NumpyNumberArray | None = "frame_duration",
         tstar: float = 0,
-        k2: float | None = None,
+        k2prime: float | None = None,
     ) -> None:
         """Estimate model parameters.
 
@@ -56,7 +56,8 @@ class LRTM(KineticModel):
                   to fit the kinetic model. Elements outside the mask will
                   be set to to 0 in parametric estimate outputs.
             tstar: time beyond which to assume linearity
-            k2: (avg.) effective tissue-to-plasma efflux constant, in unit of 1/min
+            k2prime: (avg.) effective tissue-to-plasma efflux constant in the
+                     reference region, in unit of 1/min
         """
         # get reference TAC as a 1-D vector
         reftac: NumpyNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
@@ -82,7 +83,7 @@ class LRTM(KineticModel):
 
         dvr = np.zeros((num_elements, 1))
 
-        if not k2:
+        if not k2prime:
             # TODO
             # Check Eq. 7 assumption (i.e., that tac / reftac is reasonably
             # constant) by calculating R2 etc. for each tac.
@@ -103,13 +104,14 @@ class LRTM(KineticModel):
 
             # ----- Get DVR -----
             # Set up the weighted linear regression model based on Logan et al.:
-            # - use Eq. 6 if k2 is provided
-            # - use Eq. 7 if k2 is not provided
+            # - use Eq. 6 if k2prime is provided
+            # - use Eq. 7 if k2prime is not provided
 
             x = np.column_stack(
                 (
                     np.ones_like(tac_tstar),
-                    (int_reftac_tstar + (reftac_tstar / k2 if k2 else 0)) / tac_tstar,
+                    (int_reftac_tstar + (reftac_tstar / k2prime if k2prime else 0))
+                    / tac_tstar,
                 )
             )
             y = int_tac_tstar / tac_tstar
@@ -123,8 +125,8 @@ class LRTM(KineticModel):
             # distribution volume ratio
             dvr[k] = b[1]
 
-        self.set_parameter("dvr", dvr, mask)
-        # should tstar (and k2?) also be stored?
+        self.set_parameter("DVR", dvr, mask)
+        # should tstar (and k2prime?) also be stored?
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""

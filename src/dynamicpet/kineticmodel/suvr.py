@@ -20,7 +20,7 @@ class SUVR(KineticModel):
     @classmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
-        return ["suvr"]
+        return ["SUVR"]
 
     def fit(self, mask: NumpyNumberArray | None = None) -> None:
         """Calculate SUVR.
@@ -45,7 +45,7 @@ class SUVR(KineticModel):
                                       frame_duration=frame_duration)
             >>> km = SUVR(reftac, tacs)
             >>> km.fit()
-            >>> km.get_parameter('suvr')
+            >>> km.get_parameter('SUVR')
             array([1.5, 3. ])
         """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
@@ -58,7 +58,7 @@ class SUVR(KineticModel):
         )
         suvr = numerator / denominator
 
-        self.set_parameter("suvr", suvr, mask)
+        self.set_parameter("SUVR", suvr, mask)
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""
