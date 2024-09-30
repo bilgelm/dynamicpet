@@ -131,12 +131,14 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
     def to_filename(
         self,
         filename: str | PathLike[str],
+        save_json: bool = False,
         anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
     ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the tabular TAC tsv output
+            save_json: whether the PET-BIDS json side car should be saved
             anchor: time anchor. The corresponding tag in the PET-BIDS json will
                     be set to zero (with appropriate offsets applied to other
                     tags).
@@ -144,19 +146,20 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         Raises:
             ValueError: file is not a tsv file
         """
-        self.set_timezero(anchor)
-        fbase, fext = op.splitext(filename)
-        if fext != ".tsv":
-            raise ValueError("output file must be a tsv file")
-        jsonfilename = fbase + ".json"
-
         with open(filename, "w") as f:
             tsvwriter = csv.writer(f, delimiter="\t")
             tsvwriter.writerow(self.elem_names)
             for row in self.dataobj.T:
                 tsvwriter.writerow(row)
 
-        write_json(self.json_dict, jsonfilename)
+        if save_json:
+            self.set_timezero(anchor)
+
+            fbase, fext = op.splitext(filename)
+            if fext != ".tsv":
+                raise ValueError("output file must be a tsv file")
+            jsonfilename = fbase + ".json"
+            write_json(self.json_dict, jsonfilename)
 
 
 def load(

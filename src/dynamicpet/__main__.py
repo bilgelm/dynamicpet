@@ -2,7 +2,10 @@
 
 import csv
 import os
+import re
+import sys
 import warnings
+from json import dump as json_dump
 
 import click
 import numpy as np
@@ -10,6 +13,7 @@ from nibabel.filename_parser import splitext_addext
 from nibabel.loadsave import load as nib_load
 from nibabel.spatialimages import SpatialImage
 
+from dynamicpet import __version__
 from dynamicpet.denoise import hypr
 from dynamicpet.denoise import nesma
 from dynamicpet.kineticmodel.kineticmodel import KineticModel
@@ -100,7 +104,7 @@ def denoise(
 ) -> None:
     """Perform dynamic PET denoising.
 
-    Outputs will have a '_<method>' suffix.
+    Outputs will have a '_desc-<method>_pet' suffix.
 
     PET: 4-D PET image
     """
@@ -138,8 +142,11 @@ def denoise(
     if outputdir:
         os.makedirs(outputdir, exist_ok=True)
         bname = os.path.basename(froot)
-        froot = os.path.join(outputdir, bname)
-    output = froot + "_" + method.lower() + ext + addext
+        # if the input file name follows the PET-BIDS convention, it should end
+        # with "_pet". Need to move this to the end of the new file name to
+        # maintain compatibility with the PET-BIDS Derivatives convention.
+        froot = re.sub("_pet$", "", os.path.join(outputdir, bname))
+    output = froot + "_desc-" + method.lower() + "_pet" + ext + addext
     res.to_filename(output)
 
 
@@ -200,9 +207,11 @@ def denoise(
     ),
 )
 @click.option(
-    "--start", default=None, type=float, help="Start of time window for model"
+    "--start", default=None, type=float, help="Start of time window for model in min"
 )
-@click.option("--end", default=None, type=float, help="End of time window for model")
+@click.option(
+    "--end", default=None, type=float, help="End of time window for model in min"
+)
 @click.option(
     "--fwhm",
     default=None,
@@ -226,7 +235,7 @@ def denoise(
         "'rect' is rectangular integration."
     ),
 )
-def kineticmodel(
+def kineticmodel(  # noqa: C901
     pet: str,
     model: str,
     refroi: str | None,
@@ -242,7 +251,7 @@ def kineticmodel(
 ) -> None:
     """Fit a reference tissue model to a dynamic PET image or TACs.
 
-    Outputs will have a '_km-<model>_kp-<parameter>' suffix.
+    Outputs will have a '_model-<model>_meas-<parameter>' suffix.
 
     PET: 4-D PET image (can be 3-D if model is SUVR) or a 2-D tabular TACs tsv file
     """
@@ -262,16 +271,27 @@ def kineticmodel(
         pet_img = pet_img.extract(start, end)
         reftac = reftac.extract(start, end)
 
+    if fwhm and model not in ["srtmzhou2003"]:
+        fwhm = None
+        warnings.warn(
+            "--fwhm argument is not relevant for this model, will be ignored",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
     # fit kinetic model
     km: KineticModel
     match model:
         case "suvr":
+            model_abbr = "SUVR"
             km = SUVR(reftac, pet_img)
             km.fit(mask=petmask_img_mat)
         case "srtmlammertsma1996":
+            model_abbr = "SRTM"
             km = SRTMLammertsma1996(reftac, pet_img)
             km.fit(mask=petmask_img_mat, weight_by=weight_by)
         case "srtmzhou2003":
+            model_abbr = "SRTM"
             km = SRTMZhou2003(reftac, pet_img)
             km.fit(
                 mask=petmask_img_mat,
@@ -285,10 +305,14 @@ def kineticmodel(
     if outputdir:
         os.makedirs(outputdir, exist_ok=True)
         bname = os.path.basename(froot)
-        froot = os.path.join(outputdir, bname)
+        # if the input file name follows the PET-BIDS convention, it should end
+        # with "_pet". Need to remove this to maintain compatibility with the
+        # PET-BIDS Derivatives convention.
+        froot = re.sub("_pet$", "", os.path.join(outputdir, bname))
 
     if isinstance(pet_img, PETBIDSMatrix):
-        output = froot + "_km-" + model.replace(".", "") + ext
+        output = froot + "_model-" + model_abbr + "_kinpar" + ext
+        output_json = froot + "_model-" + model_abbr + "_kinpar.json"
         data = np.empty((len(km.parameters), pet_img.num_elements))
         for i, param in enumerate(km.parameters.keys()):
             data[i] = km.get_parameter(param)
@@ -303,12 +327,52 @@ def kineticmodel(
         for param in km.parameters.keys():
             res_img: SpatialImage = km.get_parameter(param)  # type: ignore
             output = (
-                froot + "_km-" + model.replace(".", "") + "_kp-" + param + ext + addext
+                froot
+                + "_model-"
+                + model_abbr
+                + "_meas-"
+                + param
+                + "_mimap"
+                + ext
+                + addext
+            )
+            output_json = (
+                froot + "_model-" + model_abbr + "_meas-" + param + "_mimap.json"
             )
             res_img.to_filename(output)
 
-    # also need to save a json PET BIDS derivative file
-    # TODO
+    # save json PET BIDS derivative file
+    inputvalues = [start, end]
+    inputvalueslabels = [
+        "Start of time window for model",
+        "End of time window for model",
+    ]
+    inputvaluesunits = ["min", "min"]
+
+    if fwhm:
+        inputvalues += [fwhm]
+        inputvalueslabels += ["Full width at half max"]
+        inputvaluesunits += ["mm"]
+
+    derivative_json_dict = {
+        "Description": km.__class__.__doc__,
+        # "Sources": [pet],
+        "ModelName": "SRTM",
+        "ReferenceRegion": refroi if refroi else refmask,
+        "AdditionalModelDetails": (
+            f"Frame weighting by: {weight_by}.",
+            f"Integration type: {integration_type}",
+        ),
+        "InputValues": inputvalues,
+        "InputValuesLabels": inputvalueslabels,
+        "InputValuesUnits": inputvaluesunits,
+        "SoftwareName": "dynamicpet",
+        "SoftwareVersion": __version__,
+        "CommandLine": " ".join(sys.argv),
+    }
+
+    with open(output_json, "w") as f:
+        json_dump(derivative_json_dict, f)
 
 
 def parse_kineticmodel_inputs(

@@ -142,8 +142,7 @@ def test_denoise_hyprlr(images: dict[str, Path]) -> None:
     )
 
     assert result.exit_code == 0
-    assert os.path.isfile(outputdir / "pet_hyprlr.nii")
-    assert os.path.isfile(outputdir / "pet_hyprlr.json")
+    assert os.path.isfile(outputdir / "pet_desc-hyprlr_pet.nii")
 
 
 def test_denoise_nesma(images: dict[str, Path]) -> None:
@@ -176,8 +175,7 @@ def test_denoise_nesma(images: dict[str, Path]) -> None:
     )
 
     assert result.exit_code == 0
-    assert os.path.isfile(outputdir / "pet_nesma.nii")
-    assert os.path.isfile(outputdir / "pet_nesma.json")
+    assert os.path.isfile(outputdir / "pet_desc-nesma_pet.nii")
 
 
 def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
@@ -210,7 +208,7 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0
-    assert (outputdir / "rois_km-suvr.tsv").is_file()
+    assert (outputdir / "rois_model-SUVR_kinpar.tsv").is_file()
 
     # next, test with nifti images
     pet_fname = images["pet_fname"]
@@ -239,21 +237,24 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0
-    assert os.path.isfile(outputdir / "pet_km-suvr_kp-suvr.nii")
+    assert os.path.isfile(outputdir / "pet_model-SUVR_meas-SUVR_mimap.nii")
 
     # finally, make sure that the two methods give the same results
 
     # skip the header (column names) and the first column (ROI names)
     rois_km_suvr = np.genfromtxt(
-        outputdir / "rois_km-suvr.tsv", delimiter="\t", skip_header=1, usecols=(1,)
+        outputdir / "rois_model-SUVR_kinpar.tsv",
+        delimiter="\t",
+        skip_header=1,
+        usecols=(1,),
     )
 
     # read in rois_fname
     rois_img: SpatialImage = nib_load(images["rois_fname"])  # type: ignore
 
-    # calculate the average SUVR (pet_km-suvr_kp-suvr.nii) in each ROI in rois_img
+    # calculate avg SUVR (pet_model-SUVR_meas-SUVR_mimap.nii) per ROI in rois_img
     pet_km_suvr_img: SpatialImage = nib_load(  # type: ignore
-        outputdir / "pet_km-suvr_kp-suvr.nii"
+        outputdir / "pet_model-SUVR_meas-SUVR_mimap.nii"
     )
     pet_km_suvr = pet_km_suvr_img.get_fdata()
     num_rois = len(np.unique(rois_img.get_fdata())) - 1
@@ -298,7 +299,7 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0
-    assert os.path.isfile(outputdir / ("rois_km-" + model + ".tsv"))
+    assert os.path.isfile(outputdir / ("rois_model-SRTM_kinpar.tsv"))
 
     # next, test with nifti images
     pet_fname = images["pet_fname"]
@@ -327,5 +328,5 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0
-    assert os.path.isfile(outputdir / ("pet_km-" + model + "_kp-dvr.nii"))
-    assert os.path.isfile(outputdir / ("pet_km-" + model + "_kp-r1.nii"))
+    assert os.path.isfile(outputdir / ("pet_model-SRTM_meas-DVR_mimap.nii"))
+    assert os.path.isfile(outputdir / ("pet_model-SRTM_meas-R1_mimap.nii"))

@@ -52,7 +52,7 @@ def test_extract(pm: PETBIDSMatrix) -> None:
 def test_file_io(pm: PETBIDSMatrix, tmp_path: Path) -> None:
     """Test writing to file and reading it back."""
     fname = tmp_path / "test.tsv"
-    pm.to_filename(fname)
+    pm.to_filename(fname, save_json=True)
     pm2 = load(fname)
 
     assert np.allclose(pm.frame_start, pm2.frame_start)
