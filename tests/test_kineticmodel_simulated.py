@@ -194,7 +194,7 @@ def test_srtmzhou2003_tm(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp_nd: NumpyRealNumberArray = km.get_parameter("BP_ND")  # type: ignore
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
     r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
@@ -232,9 +232,9 @@ def test_srtmzhou2003_ti(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp_nd: SpatialImage = km.get_parameter("BP_ND")  # type: ignore
+    bp_nd: SpatialImage = km.get_parameter("BPND")  # type: ignore
     r1: SpatialImage = km.get_parameter("R1")  # type: ignore
-    r1_lrsc: SpatialImage = km.get_parameter("R1_lrsc")  # type: ignore
+    r1_lrsc: SpatialImage = km.get_parameter("R1LRSC")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
     assert np.allclose(bp_nd.get_fdata(), bp_nd_true, rtol=relative_tol)
@@ -262,7 +262,7 @@ def test_srtmlammertsma1996_tm(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp_nd: NumpyRealNumberArray = km.get_parameter("BP_ND")  # type: ignore
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
     r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
 
     relative_tol = 0.02  # .02 means that 2% error is tolerated
@@ -290,7 +290,7 @@ def test_lrtm_tm(
     # to fit to obtain the best possible recovery of true values
     km.fit(integration_type="trapz")
 
-    bp_nd: NumpyRealNumberArray = km.get_parameter("BP_ND")  # type: ignore
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
 
     relative_tol = 0.02  # .02 means that 2% error is tolerated
     assert np.allclose(bp_nd, bp_nd_true, rtol=relative_tol)

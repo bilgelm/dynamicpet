@@ -35,6 +35,7 @@ class KineticModel(ABC):
     @abstractmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
+        # parameter names should contain alphanumeric characters only
         raise NotImplementedError
 
     def __init__(
@@ -110,11 +111,11 @@ class KineticModel(ABC):
             else:
                 param_vector: NumpyNumberArray = self.parameters[param_name]
                 return param_vector
-        elif param_name == "BP_ND" and "DVR" in self.parameters:
+        elif param_name == "BPND" and "DVR" in self.parameters:
             self.parameters[param_name] = self.parameters["DVR"] - 1
             return self.get_parameter(param_name)
-        elif param_name == "DVR" and "BP_ND" in self.parameters:
-            self.parameters[param_name] = self.parameters["BP_ND"] + 1
+        elif param_name == "DVR" and "BPND" in self.parameters:
+            self.parameters[param_name] = self.parameters["BPND"] + 1
             return self.get_parameter(param_name)
         else:
             raise AttributeError(

@@ -3,7 +3,6 @@
 import csv
 import os
 import re
-import sys
 import warnings
 from json import dump as json_dump
 
@@ -112,11 +111,23 @@ def denoise(
     pet_img = petbidsimage_load(pet, json)
 
     if method == "HYPRLR":
+        doc = hypr.hypr_lr.__doc__
+
+        # parameters not relevant to HYPR-LR
+        mask = None
+        window_half_size = None
+        thresh = None
+
         if fwhm:
             res = hypr.hypr_lr(pet_img, fwhm)
         else:
             raise ValueError("fwhm must be specified for HYPR-LR")
     elif method == "NESMA":
+        doc = nesma.nesma_semiadaptive.__doc__
+
+        # parameter not relevant to NESMA
+        fwhm = None
+
         if mask:
             mask_img: SpatialImage = nib_load(mask)  # type: ignore
             # check that mask is in the same space as pet
@@ -147,7 +158,31 @@ def denoise(
         # maintain compatibility with the PET-BIDS Derivatives convention.
         froot = re.sub("_pet$", "", os.path.join(outputdir, bname))
     output = froot + "_desc-" + method.lower() + "_pet" + ext + addext
+    output_json = froot + "_desc-" + method.lower() + "_pet.json"
     res.to_filename(output)
+
+    cmd = (
+        f"denoise --method {method} "
+        + (f"--fwhm {fwhm} " if fwhm else "")
+        + (f"--mask {mask} " if mask else "")
+        + (f"--window_half_size {window_half_size} " if window_half_size else "")
+        + (f"--thresh {thresh} " if thresh else "")
+        + (f"--outputdir {outputdir} " if outputdir else "")
+        + (f"--json {json} " if json else "")
+        + pet
+    )
+    derivative_json_dict = {
+        "Description": (
+            re.sub(r"\s+", " ", doc.split("Args:")[0]).strip() if doc else ""
+        ),
+        # "Sources": [pet],
+        "SoftwareName": "dynamicpet",
+        "SoftwareVersion": __version__,
+        "CommandLine": cmd,
+    }
+
+    with open(output_json, "w") as f:
+        json_dump(derivative_json_dict, f, indent=4)
 
 
 @click.command()
@@ -305,12 +340,14 @@ def kineticmodel(  # noqa: C901
     if outputdir:
         os.makedirs(outputdir, exist_ok=True)
         bname = os.path.basename(froot)
-        # if the input file name follows the PET-BIDS convention, it should end
-        # with "_pet". Need to remove this to maintain compatibility with the
-        # PET-BIDS Derivatives convention.
-        froot = re.sub("_pet$", "", os.path.join(outputdir, bname))
+        froot = os.path.join(outputdir, bname)
 
     if isinstance(pet_img, PETBIDSMatrix):
+        # if the input file name follows the PET-BIDS Derivatives convention,
+        # it should end with "_tacs". Need to remove this to maintain
+        # compatibility with the PET-BIDS Derivatives convention.
+        froot = re.sub("_tacs$", "", froot)
+
         output = froot + "_model-" + model_abbr + "_kinpar" + ext
         output_json = froot + "_model-" + model_abbr + "_kinpar.json"
         data = np.empty((len(km.parameters), pet_img.num_elements))
@@ -323,6 +360,11 @@ def kineticmodel(  # noqa: C901
             for i, elem in enumerate(pet_img.elem_names):
                 tsvwriter.writerow([elem] + datat[i].tolist())
     else:
+        # if the input file name follows the PET-BIDS convention, it should end
+        # with "_pet". Need to remove this to maintain compatibility with the
+        # PET-BIDS Derivatives convention.
+        froot = re.sub("_pet$", "", froot)
+
         # save estimated parameters as image
         for param in km.parameters.keys():
             res_img: SpatialImage = km.get_parameter(param)  # type: ignore
@@ -336,10 +378,8 @@ def kineticmodel(  # noqa: C901
                 + ext
                 + addext
             )
-            output_json = (
-                froot + "_model-" + model_abbr + "_meas-" + param + "_mimap.json"
-            )
             res_img.to_filename(output)
+        output_json = froot + "_model-" + model_abbr + "_mimap.json"
 
     # save json PET BIDS derivative file
     inputvalues = [start, end]
@@ -354,25 +394,39 @@ def kineticmodel(  # noqa: C901
         inputvalueslabels += ["Full width at half max"]
         inputvaluesunits += ["mm"]
 
+    cmd = (
+        f"kineticmodel --model {model} "
+        + (f"--refroi {refroi} " if refroi else f"--refmask {refmask} ")
+        + (f"--outputdir {outputdir} " if outputdir else "")
+        + (f"--json {json} " if json else "")
+        + (f"--petmask {petmask} " if petmask else "")
+        + f"--start {start} "
+        + f"--end {end} "
+        + (f"--fwhm {fwhm} " if fwhm else "")
+        + f"--weight_by {weight_by} "
+        + f"--integration_type {integration_type} "
+        + pet
+    )
+    doc = km.__class__.__doc__
     derivative_json_dict = {
-        "Description": km.__class__.__doc__,
+        "Description": re.sub(r"\s+", " ", doc) if doc else "",
         # "Sources": [pet],
-        "ModelName": "SRTM",
+        "ModelName": model_abbr,
         "ReferenceRegion": refroi if refroi else refmask,
         "AdditionalModelDetails": (
-            f"Frame weighting by: {weight_by}.",
-            f"Integration type: {integration_type}",
+            f"Frame weighting by: {weight_by}. "
+            + f"Integration type: {integration_type}.",
         ),
         "InputValues": inputvalues,
         "InputValuesLabels": inputvalueslabels,
         "InputValuesUnits": inputvaluesunits,
         "SoftwareName": "dynamicpet",
         "SoftwareVersion": __version__,
-        "CommandLine": " ".join(sys.argv),
+        "CommandLine": cmd,
     }
 
     with open(output_json, "w") as f:
-        json_dump(derivative_json_dict, f)
+        json_dump(derivative_json_dict, f, indent=4)
 
 
 def parse_kineticmodel_inputs(

@@ -101,7 +101,7 @@ def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> No
 
     assert dvr_img.shape == (1, 1, 2)
 
-    bp_nd_img: SpatialImage = km.get_parameter("BP_ND")  # type: ignore
+    bp_nd_img: SpatialImage = km.get_parameter("BPND")  # type: ignore
 
     assert np.allclose(dvr_img.get_fdata(), bp_nd_img.get_fdata() + 1)
 
