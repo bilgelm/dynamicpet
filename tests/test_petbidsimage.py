@@ -324,7 +324,7 @@ def test_hypr_lr(ti: PETBIDSImage) -> None:
 def test_file_io(ti: PETBIDSImage, tmp_path: Path) -> None:
     """Test writing to file and reading it back."""
     fname = tmp_path / "test.nii.gz"
-    ti.to_filename(fname)
+    ti.to_filename(fname, save_json=True)
     ti2 = load(fname)
 
     assert np.allclose(ti.frame_start, ti2.frame_start)

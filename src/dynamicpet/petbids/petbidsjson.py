@@ -289,4 +289,4 @@ def write_json(json_dict: PetBidsJson, filename: str | PathLike[str]) -> None:
         filename: file name for the output
     """
     with open(filename, "w") as f:
-        json_dump(json_dict, f)
+        json_dump(json_dict, f, indent=4)

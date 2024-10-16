@@ -126,25 +126,29 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
     def to_filename(
         self,
         filename: str | PathLike[str],
+        save_json: bool = False,
         anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
     ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the PET image output
+            save_json: whether the PET-BIDS json side car should be saved
             anchor: time anchor. The corresponding tag in the PET-BIDS json will
                     be set to zero (with appropriate offsets applied to other
                     tags).
         """
-        self.set_timezero(anchor)
         self.img.to_filename(filename)
 
-        fbase, fext = op.splitext(filename)
-        if fext == ".gz":
-            fbase = op.splitext(fbase)[0]
-        jsonfilename = fbase + ".json"
+        if save_json:
+            self.set_timezero(anchor)
 
-        write_json(self.json_dict, jsonfilename)
+            fbase, fext = op.splitext(filename)
+            if fext == ".gz":
+                fbase = op.splitext(fbase)[0]
+            jsonfilename = fbase + ".json"
+
+            write_json(self.json_dict, jsonfilename)
 
 
 def load(

@@ -30,7 +30,7 @@ class SRTMLammertsma1996(KineticModel):
     @classmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
-        return ["bp", "r1", "k2"]
+        return ["BPND", "R1", "k2"]
 
     def fit(
         self,
@@ -56,7 +56,7 @@ class SRTMLammertsma1996(KineticModel):
 
         weights = tacs.get_weights(weight_by)
 
-        bp = np.zeros((num_elements, 1))
+        bp_nd = np.zeros((num_elements, 1))
         r1 = np.zeros((num_elements, 1))
         k2 = np.zeros((num_elements, 1))
         for k in trange(num_elements):
@@ -69,10 +69,10 @@ class SRTMLammertsma1996(KineticModel):
                 sigma=weights,
                 bounds=([0, 0, 0], [15, 10, 1]),
             )
-            bp[k], r1[k], k2[k] = popt
+            bp_nd[k], r1[k], k2[k] = popt
 
-        self.set_parameter("bp", bp, mask)
-        self.set_parameter("r1", r1, mask)
+        self.set_parameter("BPND", bp_nd, mask)
+        self.set_parameter("R1", r1, mask)
         self.set_parameter("k2", k2, mask)
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
@@ -82,11 +82,11 @@ class SRTMLammertsma1996(KineticModel):
 
         for i in trange(num_elements):
             idx = np.unravel_index(i, self.tacs.shape[:-1])
-            bp = self.parameters["bp"][*idx]
-            r1 = self.parameters["r1"][*idx]
+            bp_nd = self.parameters["BPND"][*idx]
+            r1 = self.parameters["R1"][*idx]
             k2 = self.parameters["k2"][*idx]
-            if bp or r1 or k2:
-                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp, r1, k2)
+            if bp_nd or r1 or k2:
+                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp_nd, r1, k2)
 
         if isinstance(self.tacs, TemporalImage):
             img = image_maker(fitted_tacs_dataobj, self.tacs.img)
@@ -100,13 +100,13 @@ class SRTMLammertsma1996(KineticModel):
 
 
 def srtm_model(
-    reftac: TemporalMatrix, bp: float, r1: float, k2: float
+    reftac: TemporalMatrix, bp_nd: float, r1: float, k2: float
 ) -> NumpyNumberArray:
     """SRTM model to generate a target TAC.
 
     Args:
         reftac: reference TAC
-        bp: binding potential
+        bp_nd: binding potential
         r1: relative radiotracer delivery parameter, R1
         k2: k2
 
@@ -130,7 +130,7 @@ def srtm_model(
         t_upsampled, t, reftac.dataobj.astype("float").flatten()
     )
 
-    k2a = k2 / (1 + bp)
+    k2a = k2 / (1 + bp_nd)
     conv_res_upsampled = (
         convolve(reftac_upsampled, np.exp(-k2a * t_upsampled), mode="full")[
             : len(t_upsampled)
@@ -157,15 +157,14 @@ class SRTMZhou2003(KineticModel):
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
         return [
-            "dvr",
-            "r1",
+            "DVR",
+            "R1",
             "k2",
             "k2a",
-            "r1_lrsc",
-            "k2_lrsc",
-            "k2a_lrsc",
-            "noise_var_eq_dvr",
-            "noise_var_eq_r1",
+            "R1LRSC",
+            "k2LRSC",
+            "k2aLRSC",
+            "noiseVarEqR1",
         ]
 
     def fit(  # noqa: max-complexity: 12
@@ -277,12 +276,11 @@ class SRTMZhou2003(KineticModel):
 
             r1[k], k2[k], k2a[k] = b
 
-        self.set_parameter("dvr", dvr, mask)
-        self.set_parameter("r1", r1, mask)
+        self.set_parameter("DVR", dvr, mask)
+        self.set_parameter("R1", r1, mask)
         self.set_parameter("k2", k2, mask)
         self.set_parameter("k2a", k2a, mask)
-        self.set_parameter("noise_var_eq_dvr", noise_var_eq_dvr, mask)
-        self.set_parameter("noise_var_eq_r1", noise_var_eq_r1, mask)
+        self.set_parameter("noiseVarEqR1", noise_var_eq_r1, mask)
 
         if do_smooth:
             smooth_r1_mat, smooth_k2_mat, smooth_k2a_mat, h = self.prep_refine_r1(
@@ -315,9 +313,9 @@ class SRTMZhou2003(KineticModel):
 
                 r1_lrsc[k], k2_lrsc[k], k2a_lrsc[k] = b
 
-            self.set_parameter("r1_lrsc", r1_lrsc, mask)
-            self.set_parameter("k2_lrsc", k2_lrsc, mask)
-            self.set_parameter("k2a_lrsc", k2a_lrsc, mask)
+            self.set_parameter("R1LRSC", r1_lrsc, mask)
+            self.set_parameter("k2LRSC", k2_lrsc, mask)
+            self.set_parameter("k2aLRSC", k2a_lrsc, mask)
 
     def prep_refine_r1(
         self,
@@ -342,7 +340,7 @@ class SRTMZhou2003(KineticModel):
         m = 3
 
         smooth_r1_img: SpatialImage = smooth_image(
-            self.get_parameter("r1"), fwhm  # type: ignore
+            self.get_parameter("R1"), fwhm  # type: ignore
         )
         smooth_k2_img: SpatialImage = smooth_image(
             self.get_parameter("k2"), fwhm  # type: ignore
@@ -351,8 +349,8 @@ class SRTMZhou2003(KineticModel):
             self.get_parameter("k2a"), fwhm  # type: ignore
         )
 
-        noise_var_eq_r1_img: SpatialImage = self.get_parameter("noise_var_eq_r1")  # type: ignore
-        r1_img: SpatialImage = self.get_parameter("r1")  # type: ignore
+        noise_var_eq_r1_img: SpatialImage = self.get_parameter("noiseVarEqR1")  # type: ignore
+        r1_img: SpatialImage = self.get_parameter("R1")  # type: ignore
         k2_img: SpatialImage = self.get_parameter("k2")  # type: ignore
         k2a_img: SpatialImage = self.get_parameter("k2a")  # type: ignore
         noise_var_eq_r1_data = noise_var_eq_r1_img.get_fdata()
@@ -409,19 +407,19 @@ class SRTMZhou2003(KineticModel):
         num_elements = self.tacs.num_elements
         fitted_tacs_dataobj = np.empty_like(self.tacs.dataobj)
 
-        use_lrsc = "r1_lrsc" in self.parameters
+        use_lrsc = "R1LRSC" in self.parameters
 
         for i in trange(num_elements):
             idx = np.unravel_index(i, self.tacs.shape[:-1])
-            dvr = self.parameters["dvr"][*idx]
-            r1 = self.parameters["r1"][*idx]
+            dvr = self.parameters["DVR"][*idx]
+            r1 = self.parameters["R1"][*idx]
             k2 = self.parameters["k2"][*idx]
             if dvr or r1 or k2:
-                bp = dvr - 1
+                bp_nd = dvr - 1
                 if use_lrsc:
-                    r1 = self.parameters["r1_lrsc"][*idx]
-                    k2 = self.parameters["k2_lrsc"][*idx]
-                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp, r1, k2)
+                    r1 = self.parameters["R1LRSC"][*idx]
+                    k2 = self.parameters["k2LRSC"][*idx]
+                fitted_tacs_dataobj[*idx, :] = srtm_model(self.reftac, bp_nd, r1, k2)
 
         if isinstance(self.tacs, TemporalImage):
             img = image_maker(fitted_tacs_dataobj, self.tacs.img)
