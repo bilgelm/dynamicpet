@@ -6,6 +6,7 @@ from nibabel.nifti1 import Nifti1Image
 from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 
+from dynamicpet.kineticmodel.logan import LRTM
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
 from dynamicpet.temporalobject import TemporalImage
@@ -74,7 +75,7 @@ def test_suvr_tm(reftac: TemporalMatrix, tacs: TemporalMatrix) -> None:
     """Test SUVR calculation using TemporalMatrix."""
     km = SUVR(reftac, tacs)
     km.fit()
-    suvr: NumpyRealNumberArray = km.get_parameter("suvr")  # type: ignore
+    suvr: NumpyRealNumberArray = km.get_parameter("SUVR")  # type: ignore
     assert suvr.shape == (2,)
     assert np.all(suvr == [2, 3])
 
@@ -86,7 +87,7 @@ def test_suvr_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
 
     fitted_tacs = km.fitted_tacs()
 
-    suvr_img: SpatialImage = km.get_parameter("suvr")  # type: ignore
+    suvr_img: SpatialImage = km.get_parameter("SUVR")  # type: ignore
     assert suvr_img.shape == (1, 1, 2)
     assert np.all(suvr_img.get_fdata() == np.array([[[2, 3]]]))
     assert np.all(fitted_tacs.dataobj == tacs_img.dataobj)
@@ -96,10 +97,19 @@ def test_srtm_zhou2003_ti(reftac: TemporalMatrix, tacs_img: TemporalImage) -> No
     """Test SRTM Zhou 2003 using TemporalImage."""
     km = SRTMZhou2003(reftac, tacs_img)
     km.fit(integration_type="trapz")
-    dvr_img: SpatialImage = km.get_parameter("dvr")  # type: ignore
+    dvr_img: SpatialImage = km.get_parameter("DVR")  # type: ignore
 
     assert dvr_img.shape == (1, 1, 2)
 
-    bp_img: SpatialImage = km.get_parameter("bp")  # type: ignore
+    bp_nd_img: SpatialImage = km.get_parameter("BPND")  # type: ignore
 
-    assert np.allclose(dvr_img.get_fdata(), bp_img.get_fdata() + 1)
+    assert np.allclose(dvr_img.get_fdata(), bp_nd_img.get_fdata() + 1)
+
+
+def test_logan_tm(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
+    """Test Logan Plot using TemporalImage."""
+    km = LRTM(reftac, tacs_img)
+    km.fit(integration_type="trapz")
+
+    dvr_img: SpatialImage = km.get_parameter("DVR")  # type: ignore
+    assert dvr_img.shape == (1, 1, 2)

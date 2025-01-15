@@ -9,6 +9,7 @@ from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 from scipy.integrate import odeint  # type: ignore
 
+from dynamicpet.kineticmodel.logan import LRTM
 from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.temporalobject import TemporalImage
@@ -107,36 +108,36 @@ def frame_duration() -> NDArray[np.double]:
 def srtm_gen_ode_model(
     y: NumpyRealNumberArray,
     t: NumpyRealNumberArray,
-    bp_val: NumpyRealNumberArray,
+    bp_nd_val: NumpyRealNumberArray,
     r1_val: NumpyRealNumberArray,
     plasma_rate: float = -0.03,
-    kref1: float = 1.0,
-    kref2: float = 0.3,
+    k1prime: float = 1.0,
+    k2prime: float = 0.3,
 ) -> list[Any]:
     """Generative ODE model describing SRTM.
 
     Args:
         y: concentrations
         t: time
-        bp_val: binding potential
+        bp_nd_val: binding potential
         r1_val: relative radiotracer delivery
         plasma_rate: plasma rate
-        kref1: k1 for reference region
-        kref2: k2 for reference region
+        k1prime: k1 for reference region
+        k2prime: k2 for reference region
 
     Returns:
         time derivatives of concentrations
     """
-    k1 = r1_val * kref1
+    k1 = r1_val * k1prime
 
-    dvr = 1 + bp_val
-    k2a = kref2 * r1_val / dvr
+    dvr = 1 + bp_nd_val
+    k2a = k2prime * r1_val / dvr
 
     cp, ct, cr = y
 
     dcpdt = plasma_rate * cp
     dctdt = k1 * cp - k2a * ct
-    dcrdt = kref1 * cp - kref2 * cr
+    dcrdt = k1prime * cp - k2prime * cr
 
     dydt = [dcpdt, dctdt, dcrdt]
 
@@ -146,7 +147,7 @@ def srtm_gen_ode_model(
 def get_tacs_and_reftac_dataobj(
     frame_start: NDArray[np.double],
     frame_duration: NDArray[np.double],
-    bp: float,
+    bp_nd: float,
     r1: float,
 ) -> tuple[NDArray[np.double], NDArray[np.double]]:
     """Get digitized TACs."""
@@ -159,7 +160,7 @@ def get_tacs_and_reftac_dataobj(
     num_ode_pts = 500
 
     t_ode = np.linspace(frame_start[0], frame_end[-1], num_ode_pts)
-    y = odeint(srtm_gen_ode_model, y0, t_ode, args=(bp, r1))
+    y = odeint(srtm_gen_ode_model, y0, t_ode, args=(bp_nd, r1))
 
     # Digitize this curve
     cref = np.zeros(len(frame_start))
@@ -177,10 +178,10 @@ def test_srtmzhou2003_tm(
     frame_duration: NDArray[np.double],
 ) -> None:
     """Test SRTM Zhou 2003 calculation using TemporalMatrix."""
-    bp_true = 1.5
+    bp_nd_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
-        frame_start, frame_duration, bp_true, r1_true
+        frame_start, frame_duration, bp_nd_true, r1_true
     )
 
     tac = TemporalMatrix(ct, frame_start, frame_duration)
@@ -193,11 +194,11 @@ def test_srtmzhou2003_tm(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
-    r1: NumpyRealNumberArray = km.get_parameter("r1")  # type: ignore
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
+    r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
-    assert np.allclose(bp, bp_true, rtol=relative_tol)
+    assert np.allclose(bp_nd, bp_nd_true, rtol=relative_tol)
     assert np.allclose(r1, r1_true, rtol=relative_tol)
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=0.01)
 
@@ -207,10 +208,10 @@ def test_srtmzhou2003_ti(
     frame_duration: NDArray[np.double],
 ) -> None:
     """Test SRTM Zhou 2003 calculation using TemporalImage."""
-    bp_true = 1.5
+    bp_nd_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
-        frame_start, frame_duration, bp_true, r1_true
+        frame_start, frame_duration, bp_nd_true, r1_true
     )
 
     dims = (10, 11, 12, len(frame_start))
@@ -231,12 +232,12 @@ def test_srtmzhou2003_ti(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp: SpatialImage = km.get_parameter("bp")  # type: ignore
-    r1: SpatialImage = km.get_parameter("r1")  # type: ignore
-    r1_lrsc: SpatialImage = km.get_parameter("r1_lrsc")  # type: ignore
+    bp_nd: SpatialImage = km.get_parameter("BPND")  # type: ignore
+    r1: SpatialImage = km.get_parameter("R1")  # type: ignore
+    r1_lrsc: SpatialImage = km.get_parameter("R1LRSC")  # type: ignore
 
     relative_tol = 0.007  # .007 means that 0.7% error is tolerated
-    assert np.allclose(bp.get_fdata(), bp_true, rtol=relative_tol)
+    assert np.allclose(bp_nd.get_fdata(), bp_nd_true, rtol=relative_tol)
     assert np.allclose(r1.get_fdata(), r1_true, rtol=relative_tol)
     assert np.allclose(r1_lrsc.get_fdata(), r1_true, rtol=relative_tol)
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=0.01)
@@ -247,10 +248,10 @@ def test_srtmlammertsma1996_tm(
     frame_duration: NDArray[np.double],
 ) -> None:
     """Test SRTM Lammertsma 1996 calculation using TemporalMatrix."""
-    bp_true = 1.5
+    bp_nd_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
-        frame_start, frame_duration, bp_true, r1_true
+        frame_start, frame_duration, bp_nd_true, r1_true
     )
 
     tac = TemporalMatrix(ct, frame_start, frame_duration)
@@ -261,37 +262,35 @@ def test_srtmlammertsma1996_tm(
 
     fitted_tacs = km.fitted_tacs()
 
-    bp: NumpyRealNumberArray = km.get_parameter("bp")  # type: ignore
-    r1: NumpyRealNumberArray = km.get_parameter("r1")  # type: ignore
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
+    r1: NumpyRealNumberArray = km.get_parameter("R1")  # type: ignore
 
     relative_tol = 0.02  # .02 means that 2% error is tolerated
-    assert np.allclose(bp, bp_true, rtol=relative_tol)
+    assert np.allclose(bp_nd, bp_nd_true, rtol=relative_tol)
     assert np.allclose(r1, r1_true, rtol=relative_tol)
     assert np.allclose(fitted_tacs.dataobj, tac.dataobj, rtol=relative_tol)
 
 
-def test_srtmkinfitr_tm(
+def test_lrtm_tm(
     frame_start: NDArray[np.double],
     frame_duration: NDArray[np.double],
 ) -> None:
-    """Test kinfitr SRTM wrapper."""
-    kinfitr = pytest.importorskip("dynamicpet.kineticmodel.kinfitr")
-
-    bp_true = 1.5
+    """Test Logan 1996 calculation using TemporalMatrix."""
+    bp_nd_true = 1.5
     r1_true = 1.2
     ct, cref = get_tacs_and_reftac_dataobj(
-        frame_start, frame_duration, bp_true, r1_true
+        frame_start, frame_duration, bp_nd_true, r1_true
     )
 
     tac = TemporalMatrix(ct, frame_start, frame_duration)
     reftac = TemporalMatrix(cref, frame_start, frame_duration)
 
-    km = kinfitr.SRTM(reftac, tac)
-    km.fit()
+    km = LRTM(reftac, tac)
+    # because of the way data were simulated, we need to use trapz integration
+    # to fit to obtain the best possible recovery of true values
+    km.fit(integration_type="trapz")
 
-    bp: NumpyRealNumberArray = km.get_parameter("bp")
-    r1: NumpyRealNumberArray = km.get_parameter("R1")
+    bp_nd: NumpyRealNumberArray = km.get_parameter("BPND")  # type: ignore
 
-    relative_tol = 0.006
-    assert np.allclose(bp, bp_true, rtol=relative_tol)
-    assert np.allclose(r1, r1_true, rtol=relative_tol)
+    relative_tol = 0.02  # .02 means that 2% error is tolerated
+    assert np.allclose(bp_nd, bp_nd_true, rtol=relative_tol)

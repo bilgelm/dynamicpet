@@ -6,6 +6,7 @@ defined here.
 It might be useful to make this into its own class in the future.
 """
 
+import datetime
 import os.path as op
 import warnings
 from copy import deepcopy
@@ -13,6 +14,7 @@ from json import dump as json_dump
 from json import load as json_load
 from os import PathLike
 from typing import Any
+from typing import Literal
 from typing import NotRequired
 from typing import TypedDict
 
@@ -45,10 +47,13 @@ class PetBidsJson(TypedDict):
 
     TracerRadionuclide: str
 
-    ScanStart: float
+    TimeZero: str  # HH:MM:SS
+    ScanStart: float  # at least one of ScanStart and InjectionStart should be 0
     InjectionStart: float
     FrameTimesStart: list[float]
     FrameDuration: list[float]
+    ImageDecayCorrected: bool
+    ImageDecayCorrectionTime: NotRequired[float]  # required if ImageDecayCorrected
 
     # entries below are not needed for any function in this module, but some are
     # required by the PET-BIDS standard
@@ -99,14 +104,11 @@ class PetBidsJson(TypedDict):
     Anaesthesia: NotRequired[str]
 
     # Time tags
-    TimeZero: NotRequired[str]
     InjectionEnd: NotRequired[float]
     ScanDate: NotRequired[str]  # DEPRECATED
 
     # Reconstruction tags
     AcquisitionMode: NotRequired[str]
-    ImageDecayCorrected: NotRequired[bool]
-    ImageDecayCorrectionTime: NotRequired[float]
     ReconMethodName: NotRequired[str]
     ReconMethodParameterLabels: NotRequired[list[str]]
     ReconMethodParameterUnits: NotRequired[list[str]]
@@ -130,6 +132,58 @@ class PetBidsJson(TypedDict):
     TaskDescription: NotRequired[str]
     Instructions: NotRequired[str]
     TaskName: NotRequired[str]
+
+
+def get_hhmmss(
+    json_dict: PetBidsJson,
+    event: Literal[
+        "ScanStart",
+        "InjectionStart",
+        "ImageDecayCorrectionTime",
+        "FirstFrameStart",
+        "TimeZero",
+    ],
+) -> datetime.time:
+    """Get event time in HH:MM:SS.
+
+    Args:
+        json_dict: json dictionary
+        event: event whose time to get in HH:MM:SS
+
+    Returns:
+        event time
+
+    Raises:
+        ValueError: image is not decay corrected
+    """
+    # convert TimeZero to date
+    timezero = datetime.datetime.strptime(json_dict["TimeZero"], "%H:%M:%S")
+    if event == "TimeZero":
+        return timezero.time()
+
+    if event == "ImageDecayCorrectionTime" and not json_dict["ImageDecayCorrected"]:
+        raise ValueError("Image is not decay corrected")
+
+    # ScanStart, InjectionStart, ImageDecayCorrectionTime, FrameTimesStart are
+    # all relative to TimeZero, in seconds
+    if event == "FirstFrameStart":
+        offset = json_dict["FrameTimesStart"][0]
+    else:
+        offset = json_dict[event]
+    scanstart: datetime.datetime = timezero + datetime.timedelta(seconds=offset)
+
+    return scanstart.time()
+
+
+def timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
+    """Get difference in seconds between two datetime.time objects HH:MM:SS."""
+    td = (
+        3600 * (firsttime.hour - secondtime.hour)
+        + 60 * (firsttime.minute - secondtime.minute)
+        + firsttime.second
+        - secondtime.second
+    )
+    return td
 
 
 def update_frametiming_from(
@@ -164,8 +218,6 @@ def get_frametiming_in_mins(
     seconds. This corresponds to DICOM Tag (0018,1042) converted to seconds
     relative to TimeZero.
     At least one of ScanStart and InjectionStart should be 0.
-    If ScanStart is 0, FrameTimesStart are shifted so that outputs are relative
-    to injection start.
     This method does not check if the FrameTimesStart and FrameDuration entries
     in the json file are sensible.
 
@@ -188,15 +240,14 @@ def get_frametiming_in_mins(
 
     inj_start: float = json_dict["InjectionStart"]
     scan_start: float = json_dict["ScanStart"]
-    if inj_start == 0:
-        pass
-    elif scan_start == 0:
-        if frame_start[-1] + frame_duration[-1] < inj_start:
-            warnings.warn("No data acquired after injection", stacklevel=2)
-        frame_start -= inj_start
-    else:
+    if not (inj_start == 0 or scan_start == 0):
         # invalid PET BIDS json
         raise ValueError("Neither InjectionStart nor ScanStart is 0")
+
+    if frame_start[0] < scan_start:
+        raise ValueError("First time frame starts before ScanStart")
+    if frame_start[-1] + frame_duration[-1] < inj_start:
+        warnings.warn("No data acquired after injection", stacklevel=2)
 
     # convert seconds to minutes
     return frame_start / 60, frame_duration / 60
@@ -238,4 +289,4 @@ def write_json(json_dict: PetBidsJson, filename: str | PathLike[str]) -> None:
         filename: file name for the output
     """
     with open(filename, "w") as f:
-        json_dump(json_dict, f)
+        json_dump(json_dict, f, indent=4)

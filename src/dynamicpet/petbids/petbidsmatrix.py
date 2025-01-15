@@ -4,6 +4,7 @@ import csv
 import os.path as op
 from copy import deepcopy
 from os import PathLike
+from typing import Literal
 
 import numpy as np
 
@@ -63,8 +64,8 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         """Extract a temporally shorter PETBIDSMatrix from a PETBIDSMatrix.
 
         Args:
-            start_time: time at which to begin, inclusive
-            end_time: time at which to stop, inclusive
+            start_time: time (min) at which to begin relative to TimeZero, incl.
+            end_time: time (min) at which to stop relative to TimeZero, incl.
 
         Returns:
             extracted_img: extracted PETBIDSMatrix
@@ -83,44 +84,82 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Returns:
             concatenated PETBIDSMatrix
-
-        Raises:
-            ValueError: PETBIDSMatrices are from different radionuclides
         """
-        if (
-            self.json_dict["TracerRadionuclide"]
-            != other.json_dict["TracerRadionuclide"]
-        ):
-            raise ValueError("Cannot concatenate data from different radionuclides")
+        newdecaycorrecttime, original_anchor = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=newdecaycorrecttime)
 
         concat_mat = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_mat)
 
         concat_res = PETBIDSMatrix(concat_mat.dataobj, json_dict)
+        concat_res.set_timezero(anchor=original_anchor)
 
         return concat_res
 
-    def to_filename(self, filename: str | PathLike[str]) -> None:
+    def decay_correct(self, decaycorrecttime: float = 0) -> "PETBIDSMatrix":
+        """Return decay corrected PETBIDSMatrix.
+
+        Args:
+            decaycorrecttime: time to decay correct to, relative to time zero
+
+        Returns:
+            decay corrected TACs
+        """
+        tacs = self.get_decay_corrected_tacs(decaycorrecttime)
+        corrected_tacs = np.reshape(tacs, self.shape)
+
+        json_dict = deepcopy(self.json_dict)
+        json_dict["ImageDecayCorrected"] = True
+        json_dict["ImageDecayCorrectionTime"] = (
+            decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
+        )
+
+        return PETBIDSMatrix(corrected_tacs, json_dict)
+
+    def decay_uncorrect(self) -> "PETBIDSMatrix":
+        """Return decay uncorrected PETBIDSMatrix."""
+        tacs = self.get_decay_uncorrected_tacs()
+        uncorrected_tacs = np.reshape(tacs, self.shape)
+
+        json_dict = deepcopy(self.json_dict)
+        json_dict["ImageDecayCorrected"] = False
+        # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
+        # do anything about it
+
+        return PETBIDSMatrix(uncorrected_tacs, json_dict)
+
+    def to_filename(
+        self,
+        filename: str | PathLike[str],
+        save_json: bool = False,
+        anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
+    ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the tabular TAC tsv output
+            save_json: whether the PET-BIDS json side car should be saved
+            anchor: time anchor. The corresponding tag in the PET-BIDS json will
+                    be set to zero (with appropriate offsets applied to other
+                    tags).
 
         Raises:
             ValueError: file is not a tsv file
         """
-        fbase, fext = op.splitext(filename)
-        if fext != ".tsv":
-            raise ValueError("output file must be a tsv file")
-        jsonfilename = fbase + ".json"
-
         with open(filename, "w") as f:
             tsvwriter = csv.writer(f, delimiter="\t")
             tsvwriter.writerow(self.elem_names)
             for row in self.dataobj.T:
                 tsvwriter.writerow(row)
 
-        write_json(self.json_dict, jsonfilename)
+        if save_json:
+            self.set_timezero(anchor)
+
+            fbase, fext = op.splitext(filename)
+            if fext != ".tsv":
+                raise ValueError("output file must be a tsv file")
+            jsonfilename = fbase + ".json"
+            write_json(self.json_dict, jsonfilename)
 
 
 def load(

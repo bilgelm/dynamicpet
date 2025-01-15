@@ -33,11 +33,14 @@ def json_dict() -> PetBidsJson:
     frame_duration: NDArray[np.int16] = frame_end - frame_start
 
     json_dict: PetBidsJson = {
+        "TimeZero": "10:00:00",
         "FrameTimesStart": frame_start.tolist(),
         "FrameDuration": frame_duration.tolist(),
         "InjectionStart": 0,
         "ScanStart": 0,
         "TracerRadionuclide": "C11",
+        "ImageDecayCorrected": True,
+        "ImageDecayCorrectionTime": 0,
     }
 
     return json_dict
@@ -281,9 +284,25 @@ def test_decay_correction_factor(ti: PETBIDSImage) -> None:
     assert ti.get_decay_correction_factor().shape == ti.frame_duration.shape
 
 
-def test_decay_correct_uncorrect(ti: PETBIDSImage) -> None:
-    """Test if decay correction then uncorrection yields same result."""
-    ti2 = ti.decay_correct().decay_uncorrect()
+def test_decay_correct0_corrected(ti: PETBIDSImage) -> None:
+    """Test if decay correction on an already corrected image does nothing."""
+    ti2 = ti.decay_correct()
+    assert np.allclose(ti.dataobj, ti2.dataobj)
+    assert np.all(ti.frame_start == ti2.frame_start)
+    assert np.all(ti.frame_end == ti2.frame_end)
+
+
+def test_decay_correct_corrected(ti: PETBIDSImage) -> None:
+    """Test if decay correction to a different anchor does something."""
+    ti2 = ti.decay_correct(-100)
+    assert not np.allclose(ti.dataobj, ti2.dataobj)
+    assert np.all(ti.frame_start == ti2.frame_start)
+    assert np.all(ti.frame_end == ti2.frame_end)
+
+
+def test_decay_correct_uncorrect_correct(ti: PETBIDSImage) -> None:
+    """Test if decay correct-uncorrect-correct yields same result."""
+    ti2 = ti.decay_correct(-100).decay_uncorrect().decay_correct(0)
     assert np.allclose(ti.dataobj, ti2.dataobj)
     assert np.all(ti.frame_start == ti2.frame_start)
     assert np.all(ti.frame_end == ti2.frame_end)
@@ -305,7 +324,7 @@ def test_hypr_lr(ti: PETBIDSImage) -> None:
 def test_file_io(ti: PETBIDSImage, tmp_path: Path) -> None:
     """Test writing to file and reading it back."""
     fname = tmp_path / "test.nii.gz"
-    ti.to_filename(fname)
+    ti.to_filename(fname, save_json=True)
     ti2 = load(fname)
 
     assert np.allclose(ti.frame_start, ti2.frame_start)
