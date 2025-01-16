@@ -1,9 +1,5 @@
 """Patlak plot."""
 
-# References:
-# https://osipi.github.io/DCE-DSC-MRI_TestResults/PatlakModel.html
-# https://journals.sagepub.com/doi/epdf/10.1038/jcbfm.1985.87
-
 import numpy as np
 from numpy.linalg import LinAlgError
 from scipy.linalg import solve  # type: ignore
