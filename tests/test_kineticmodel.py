@@ -7,6 +7,7 @@ from nibabel.spatialimages import SpatialImage
 from numpy.typing import NDArray
 
 from dynamicpet.kineticmodel.logan import LRTM
+from dynamicpet.kineticmodel.patlak import PRTM
 from dynamicpet.kineticmodel.srtm import SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
 from dynamicpet.temporalobject import TemporalImage
@@ -113,3 +114,12 @@ def test_logan_tm(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
 
     dvr_img: SpatialImage = km.get_parameter("DVR")  # type: ignore
     assert dvr_img.shape == (1, 1, 2)
+
+
+def test_patlak_tm(reftac: TemporalMatrix, tacs_img: TemporalImage) -> None:
+    """Test Patlak Plot using TemporalImage."""
+    km = PRTM(reftac, tacs_img)
+    km.fit(integration_type="trapz")
+
+    slope_img: SpatialImage = km.get_parameter("slope")  # type: ignore
+    assert slope_img.shape == (1, 1, 2)
