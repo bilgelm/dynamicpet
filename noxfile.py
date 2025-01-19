@@ -9,10 +9,8 @@ from textwrap import dedent
 
 import nox
 
-
 try:
-    from nox_poetry import Session
-    from nox_poetry import session
+    from nox_poetry import Session, session
 except ImportError:
     message = f"""\
     Nox failed to import the 'nox-poetry' package.
@@ -46,6 +44,7 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 
     Args:
         session: The Session object.
+
     """
     assert session.bin is not None  # noqa: S101
 
@@ -97,7 +96,8 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
         text = hook.read_text()
 
         if not any(
-            Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text
+            (Path("A") == Path("a") and bindir.lower() in text.lower())
+            or bindir in text
             for bindir in bindirs
         ):
             continue
@@ -145,7 +145,7 @@ def safety(session: Session) -> None:
     session.install("safety")
     session.run(
         "safety",
-        "check",
+        "scan",
         "--full-report",
         f"--file={requirements}",
         "--ignore",
@@ -239,7 +239,12 @@ def docs(session: Session) -> None:
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
     session.install(".")
     session.install(
-        "sphinx-autobuild", "sphinx-click", "furo", "myst_nb", "matplotlib", "nilearn"
+        "sphinx-autobuild",
+        "sphinx-click",
+        "furo",
+        "myst_nb",
+        "matplotlib",
+        "nilearn",
     )
 
     build_dir = Path("docs", "_build")

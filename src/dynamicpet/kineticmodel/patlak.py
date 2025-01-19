@@ -1,16 +1,24 @@
 """Patlak plot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 from numpy.linalg import LinAlgError
-from scipy.linalg import solve  # type: ignore
+from scipy.linalg import solve  # type: ignore[import-untyped]
 from tqdm import trange
 
-from ..temporalobject.temporalimage import TemporalImage
-from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
-from ..temporalobject.temporalobject import WEIGHT_OPTS
-from ..typing_utils import NumpyNumberArray
-from .kineticmodel import KineticModel
+from dynamicpet.kineticmodel.kineticmodel import KineticModel
+
+if TYPE_CHECKING:
+    from dynamicpet.temporalobject.temporalimage import TemporalImage
+    from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
+    from dynamicpet.temporalobject.temporalobject import (
+        INTEGRATION_TYPE_OPTS,
+        WEIGHT_OPTS,
+    )
+    from dynamicpet.typing_utils import NumpyNumberArray
 
 
 class PRTM(KineticModel):
@@ -56,12 +64,13 @@ class PRTM(KineticModel):
                   to fit the kinetic model. Elements outside the mask will
                   be set to to 0 in parametric estimate outputs.
             tstar: time beyond which to assume linearity
+
         """
         # get reference TAC as a 1-D vector
         reftac: NumpyNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
         # numerical integration of reference TAC
         int_reftac: NumpyNumberArray = self.reftac.cumulative_integral(
-            integration_type
+            integration_type,
         ).flatten()[:, np.newaxis]
 
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
@@ -75,7 +84,7 @@ class PRTM(KineticModel):
         tacs_mat_tstar = tacs_mat[:, t_idx]
 
         x = np.column_stack(
-            (np.ones_like(int_reftac_tstar), int_reftac_tstar / reftac_tstar)
+            (np.ones_like(int_reftac_tstar), int_reftac_tstar / reftac_tstar),
         )
         weights = tacs.get_weights(weight_by)
         w = np.diag(weights[t_idx])
@@ -100,4 +109,4 @@ class PRTM(KineticModel):
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""
-        raise NotImplementedError()
+        raise NotImplementedError

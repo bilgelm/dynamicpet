@@ -1,16 +1,24 @@
 """Logan plot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 from numpy.linalg import LinAlgError
-from scipy.linalg import solve  # type: ignore
+from scipy.linalg import solve  # type: ignore[import-untyped]
 from tqdm import trange
 
-from ..temporalobject.temporalimage import TemporalImage
-from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
-from ..temporalobject.temporalobject import WEIGHT_OPTS
-from ..typing_utils import NumpyNumberArray
-from .kineticmodel import KineticModel
+from dynamicpet.kineticmodel.kineticmodel import KineticModel
+
+if TYPE_CHECKING:
+    from dynamicpet.temporalobject.temporalimage import TemporalImage
+    from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
+    from dynamicpet.temporalobject.temporalobject import (
+        INTEGRATION_TYPE_OPTS,
+        WEIGHT_OPTS,
+    )
+    from dynamicpet.typing_utils import NumpyNumberArray
 
 
 class LRTM(KineticModel):
@@ -58,12 +66,13 @@ class LRTM(KineticModel):
             tstar: time beyond which to assume linearity
             k2prime: (avg.) effective tissue-to-plasma efflux constant in the
                      reference region, in unit of 1/min
+
         """
         # get reference TAC as a 1-D vector
         reftac: NumpyNumberArray = self.reftac.dataobj.flatten()[:, np.newaxis]
         # numerical integration of reference TAC
         int_reftac: NumpyNumberArray = self.reftac.cumulative_integral(
-            integration_type
+            integration_type,
         ).flatten()[:, np.newaxis]
 
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
@@ -84,7 +93,7 @@ class LRTM(KineticModel):
         dvr = np.zeros((num_elements, 1))
 
         if not k2prime:
-            # TODO
+            # TODO @bilgelm: sanity checks  # noqa: TD003, FIX002
             # Check Eq. 7 assumption (i.e., that tac / reftac is reasonably
             # constant) by calculating R2 etc. for each tac.
             # Display warning if assumption is off.
@@ -112,7 +121,7 @@ class LRTM(KineticModel):
                     np.ones_like(tac_tstar),
                     (int_reftac_tstar + (reftac_tstar / k2prime if k2prime else 0))
                     / tac_tstar,
-                )
+                ),
             )
             y = int_tac_tstar / tac_tstar
 
@@ -130,4 +139,4 @@ class LRTM(KineticModel):
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""
-        raise NotImplementedError()
+        raise NotImplementedError

@@ -1,28 +1,21 @@
 """Test cases for __main__.py."""
 
+# ruff: noqa: S101
+
 import csv
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-
-# from betamax import Betamax
-import requests
+import requests  # consider revisiting betamax after urllib3 bug is fixed
 from click.testing import CliRunner
 from nibabel.loadsave import load as nib_load
-from nibabel.spatialimages import SpatialImage
 
 from dynamicpet.temporalobject.temporalimage import image_maker
 
-
-# pytest.mark.usefixtures("betamax_session")
-
-# outdir = Path(__file__).parent / "test_data"
-# outdir.mkdir(exist_ok=True)
-# with Betamax.configure() as config:
-#     config.cassette_library_dir = outdir
-#
-# will revisit betamax after urllib3 bug is fixed
+if TYPE_CHECKING:
+    from nibabel.spatialimages import SpatialImage
 
 
 @pytest.fixture(scope="session")
@@ -50,7 +43,7 @@ def images() -> dict[str, Path]:
     if not rois_fname.exists():
         r = requests.get(roisurl, timeout=10)
         r.raise_for_status()
-        with open(rois_fname, "wb") as f:
+        with Path(rois_fname).open("wb") as f:
             f.write(r.content)
 
     if not petjson_fname.exists():
@@ -61,13 +54,13 @@ def images() -> dict[str, Path]:
             timeout=10,
         )
         r.raise_for_status()
-        with open(petjson_fname, "wb") as f:
+        with Path(petjson_fname).open("wb") as f:
             f.write(r.content)
 
     if not pet_fname.exists():
         with requests.get(peturl, timeout=10, stream=True) as r:
             r.raise_for_status()
-            with open(pet_fname, "wb") as f:
+            with Path(pet_fname).open("wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
@@ -79,10 +72,10 @@ def images() -> dict[str, Path]:
         pass
     else:
         # save timeseries in each ROI to a single csv file
-        pet_img: SpatialImage = nib_load(pet_fname)  # type: ignore
+        pet_img: SpatialImage = nib_load(pet_fname)  # type: ignore[assignment]
         pet_data = pet_img.get_fdata()
 
-        rois_img: SpatialImage = nib_load(rois_fname)  # type: ignore
+        rois_img: SpatialImage = nib_load(rois_fname)  # type: ignore[assignment]
         rois_data = rois_img.get_fdata()
         num_rois = len(np.unique(rois_data)) - 1
 
@@ -90,7 +83,8 @@ def images() -> dict[str, Path]:
         for i in range(num_rois):
             rois_ts[i, :] = pet_data[rois_data == i + 1, :].mean(axis=0)
 
-        petmask_img = image_maker(pet_data.sum(axis=-1) > 100, pet_img)
+        thresh = 100
+        petmask_img = image_maker(pet_data.sum(axis=-1) > thresh, pet_img)
         petmask_img.to_filename(petmask_fname)
 
         # make a binary mask from first ROI in displacementROI_dseg.nii.gz
@@ -99,14 +93,14 @@ def images() -> dict[str, Path]:
         refmask_img = image_maker(1 * (rois_data == 1), petmask_img)
         refmask_img.to_filename(refmask_fname)
 
-        with open(rois_csv_fname, "w") as f:
+        with Path(rois_csv_fname).open("w") as f:
             tsvwriter = csv.writer(f, delimiter="\t")
             # write ROI names in first row
             tsvwriter.writerow(["ROI" + str(i + 1) for i in range(num_rois)])
             for row in rois_ts.T:
                 tsvwriter.writerow(row)
 
-    fnames = {
+    return {
         "pet_fname": pet_fname,
         "petjson_fname": petjson_fname,
         "petmask_fname": petmask_fname,
@@ -114,8 +108,6 @@ def images() -> dict[str, Path]:
         "rois_fname": rois_fname,
         "rois_csv_fname": rois_csv_fname,
     }
-
-    return fnames
 
 
 def test_denoise_hyprlr(images: dict[str, Path]) -> None:
@@ -140,9 +132,11 @@ def test_denoise_hyprlr(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
 
-    assert result.exit_code == 0
-    assert (outputdir / "sub-000101_ses-baseline_desc-hyprlr_pet.nii").is_file()
-    assert (outputdir / "sub-000101_ses-baseline_desc-hyprlr_pet.json").is_file()
+    assert result.exit_code == 0, "Denoise had an error"
+
+    msg = "Couldn't find denoise output file"
+    assert (outputdir / "sub-000101_ses-baseline_desc-hyprlr_pet.nii").is_file(), msg
+    assert (outputdir / "sub-000101_ses-baseline_desc-hyprlr_pet.json").is_file(), msg
 
 
 def test_denoise_nesma(images: dict[str, Path]) -> None:
@@ -174,9 +168,11 @@ def test_denoise_nesma(images: dict[str, Path]) -> None:
         catch_exceptions=False,
     )
 
-    assert result.exit_code == 0
-    assert (outputdir / "sub-000101_ses-baseline_desc-nesma_pet.nii").is_file()
-    assert (outputdir / "sub-000101_ses-baseline_desc-nesma_pet.json").is_file()
+    assert result.exit_code == 0, "Denoise had an error"
+
+    msg = "Couldn't find denoise output file"
+    assert (outputdir / "sub-000101_ses-baseline_desc-nesma_pet.nii").is_file(), msg
+    assert (outputdir / "sub-000101_ses-baseline_desc-nesma_pet.json").is_file(), msg
 
 
 def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
@@ -208,8 +204,10 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
         ],
         catch_exceptions=False,
     )
-    assert result.exit_code == 0
-    assert (outputdir / "sub-000101_ses-baseline_model-SUVR_kinpar.tsv").is_file()
+    assert result.exit_code == 0, "Kineticmodel had an error"
+
+    msg = "Couldn't find kineticmodel output file"
+    assert (outputdir / "sub-000101_ses-baseline_model-SUVR_kinpar.tsv").is_file(), msg
 
     # next, test with nifti images
     pet_fname = images["pet_fname"]
@@ -237,11 +235,13 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
         ],
         catch_exceptions=False,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, "Kineticmodel had an error"
+
+    msg = "Couldn't find kineticmodel output file"
     assert (
         outputdir / "sub-000101_ses-baseline_model-SUVR_meas-SUVR_mimap.nii"
-    ).is_file()
-    assert (outputdir / "sub-000101_ses-baseline_model-SUVR_mimap.json").is_file()
+    ).is_file(), msg
+    assert (outputdir / "sub-000101_ses-baseline_model-SUVR_mimap.json").is_file(), msg
 
     # finally, make sure that the two methods give the same results
 
@@ -254,11 +254,11 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
     )
 
     # read in rois_fname
-    rois_img: SpatialImage = nib_load(images["rois_fname"])  # type: ignore
+    rois_img: SpatialImage = nib_load(images["rois_fname"])  # type: ignore[assignment]
 
     # calculate avg SUVR (pet_model-SUVR_meas-SUVR_mimap.nii) per ROI in rois_img
-    pet_km_suvr_img: SpatialImage = nib_load(  # type: ignore
-        outputdir / "sub-000101_ses-baseline_model-SUVR_meas-SUVR_mimap.nii"
+    pet_km_suvr_img: SpatialImage = nib_load(  # type: ignore[assignment]
+        outputdir / "sub-000101_ses-baseline_model-SUVR_meas-SUVR_mimap.nii",
     )
     pet_km_suvr = pet_km_suvr_img.get_fdata()
     num_rois = len(np.unique(rois_img.get_fdata())) - 1
@@ -267,8 +267,10 @@ def test_kineticmodel_suvr(images: dict[str, Path]) -> None:
         suvr[i] = pet_km_suvr[rois_img.get_fdata() == i + 1].mean()
 
     # check that the suvr of the reference region is 1.0
-    assert np.round(suvr[0], 4) == 1.0
-    assert np.allclose(rois_km_suvr, suvr, rtol=1e-3, atol=1e-3)
+    assert np.round(suvr[0], 4) == 1.0, (
+        f"Expected SUVR of 1.0 in reference, got {np.round(suvr[0], 4)}"
+    )
+    assert np.allclose(rois_km_suvr, suvr, rtol=1e-3, atol=1e-3), "Mismatching SUVRs"
 
 
 def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
@@ -302,9 +304,11 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
         ],
         catch_exceptions=False,
     )
-    assert result.exit_code == 0
-    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_kinpar.tsv").is_file()
-    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_kinpar.json").is_file()
+    assert result.exit_code == 0, "Kineticmodel had an error"
+
+    msg = "Couldn't find kineticmodel output file"
+    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_kinpar.tsv").is_file(), msg
+    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_kinpar.json").is_file(), msg
 
     # next, test with nifti images
     pet_fname = images["pet_fname"]
@@ -332,11 +336,13 @@ def test_kineticmodel_srtmzhou2003(images: dict[str, Path]) -> None:
         ],
         catch_exceptions=False,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, "Kineticmodel had an error"
+
+    msg = "Couldn't find kineticmodel output file"
     assert (
         outputdir / "sub-000101_ses-baseline_model-SRTM_meas-DVR_mimap.nii"
-    ).is_file()
+    ).is_file(), msg
     assert (
         outputdir / "sub-000101_ses-baseline_model-SRTM_meas-R1_mimap.nii"
-    ).is_file()
-    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_mimap.json").is_file()
+    ).is_file(), msg
+    assert (outputdir / "sub-000101_ses-baseline_model-SRTM_mimap.json").is_file(), msg

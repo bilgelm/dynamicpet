@@ -2,16 +2,17 @@
 
 from abc import ABC
 from typing import Literal
-from typing import Tuple
 
 import numpy as np
 
-from ..temporalobject.temporalobject import TemporalObject
-from ..typing_utils import NumpyNumberArray
-from .petbidsjson import PetBidsJson
-from .petbidsjson import get_hhmmss
-from .petbidsjson import get_radionuclide_halflife
-from .petbidsjson import timediff
+from dynamicpet.petbids.petbidsjson import (
+    PetBidsJson,
+    get_hhmmss,
+    get_radionuclide_halflife,
+    timediff,
+)
+from dynamicpet.temporalobject.temporalobject import TemporalObject
+from dynamicpet.typing_utils import NumpyNumberArray
 
 
 class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
@@ -21,12 +22,14 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
         frame_start: vector containing the start times of each frame
         frame_duration: vector containing the durations of each frame
         json_dict: PET-BIDS json dictionary
+
     """
 
     json_dict: PetBidsJson
 
     def set_timezero(
-        self, anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart"
+        self,
+        anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
     ) -> None:
         """Modify time tags and frame time start to specified anchor."""
         if self.json_dict[anchor] == 0:
@@ -48,13 +51,14 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
         ]
         for tag in scalar_tags_to_update:
             if tag in self.json_dict:
-                self.json_dict[tag] -= offset  # type: ignore
+                self.json_dict[tag] -= offset  # type: ignore[literal-required]
 
         self.json_dict["FrameTimesStart"] = [fts - offset for fts in frametimesstart]
         self.json_dict["TimeZero"] = new_timezero.strftime("%H:%M:%S")
 
     def get_decay_correction_factor(
-        self, decaycorrecttime: float = 0
+        self,
+        decaycorrecttime: float = 0,
     ) -> NumpyNumberArray:
         """Get radionuclide decay correction factor.
 
@@ -64,6 +68,7 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
 
         Returns:
             decay correction factors
+
         """
         halflife = get_radionuclide_halflife(self.json_dict)
         lmbda = np.log(2) / halflife
@@ -84,6 +89,7 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
 
         Returns:
             decay corrected TACs
+
         """
         # check if tacs are already decay corrected
         if (
@@ -102,13 +108,14 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
             return self.dataobj
 
         factor = self.get_decay_correction_factor(
-            self.json_dict["ImageDecayCorrectionTime"]
+            self.json_dict["ImageDecayCorrectionTime"],
         )
         return self.dataobj / factor
 
     def _decay_correct_offset(
-        self, other: "PETBIDSObject"
-    ) -> Tuple[float, Literal["InjectionStart", "ScanStart"]]:
+        self,
+        other: "PETBIDSObject",
+    ) -> tuple[float, Literal["InjectionStart", "ScanStart"]]:
         """Calculate ImageDecayCorrectionTime offset needed to match other to self.
 
         This is a helper function for concatenate.
@@ -123,6 +130,7 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
 
         Raises:
             ValueError: radionuclides or injection/scan times are incompatible
+
         """
         # check if scans are combineable
         # - verify same radionuclide
@@ -130,19 +138,23 @@ class PETBIDSObject(TemporalObject["PETBIDSObject"], ABC):
             self.json_dict["TracerRadionuclide"]
             != other.json_dict["TracerRadionuclide"]
         ):
-            raise ValueError("Radionuclides are incompatible")
+            msg = "Radionuclides are incompatible"
+            raise ValueError(msg)
 
         # - verify same injection time
         if get_hhmmss(self.json_dict, "InjectionStart") != get_hhmmss(
-            other.json_dict, "InjectionStart"
+            other.json_dict,
+            "InjectionStart",
         ):
-            raise ValueError("Injection times are incompatible")
+            msg = "Injection times are incompatible"
+            raise ValueError(msg)
 
         # - check scan timing
         this_firstframestart = get_hhmmss(self.json_dict, "FirstFrameStart")
         other_firstframestart = get_hhmmss(other.json_dict, "FirstFrameStart")
         if timediff(other_firstframestart, this_firstframestart) <= self.total_duration:
-            raise ValueError("Scan times are incompatible")
+            msg = "Scan times are incompatible"
+            raise ValueError(msg)
 
         original_anchor: Literal["InjectionStart", "ScanStart"]
         if self.json_dict["InjectionStart"] == 0:

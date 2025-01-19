@@ -1,8 +1,10 @@
 """Sphinx configuration."""
 
+# ruff: noqa: INP001
+
 project = "Dynamic PET"
 author = "Murat Bilgel"
-copyright = "2023, Murat Bilgel"
+copyright = "2023, Murat Bilgel"  # noqa: A001
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",

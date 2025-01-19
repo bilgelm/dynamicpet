@@ -1,15 +1,19 @@
 """Kinetic modeling for dynamic PET (for reference tissue models)."""
 
-from abc import ABC
-from abc import abstractmethod
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import numpy as np
-from nibabel.spatialimages import SpatialImage
 
-from ..temporalobject.temporalimage import TemporalImage
-from ..temporalobject.temporalimage import image_maker
-from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyNumberArray
+from dynamicpet.temporalobject.temporalimage import TemporalImage, image_maker
+
+if TYPE_CHECKING:
+    from nibabel.spatialimages import SpatialImage
+
+    from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
+    from dynamicpet.typing_utils import NumpyNumberArray
 
 
 # rename to ReferenceTissueKineticModel ??
@@ -25,6 +29,7 @@ class KineticModel(ABC):
         reftac: reference time activity curve (TAC), with times specified in minutes
         tacs: TACs in regions/voxels of interest, with times specified in minutes
         parameters: kinetic model parameters, of same spatial dimension as input TACs
+
     """
 
     reftac: TemporalMatrix
@@ -39,7 +44,9 @@ class KineticModel(ABC):
         raise NotImplementedError
 
     def __init__(
-        self, reftac: TemporalMatrix, tacs: TemporalMatrix | TemporalImage
+        self,
+        reftac: TemporalMatrix,
+        tacs: TemporalMatrix | TemporalImage,
     ) -> None:
         """Initialize a kinetic model.
 
@@ -50,21 +57,28 @@ class KineticModel(ABC):
 
         Raises:
             ValueError: incompatible temporal dimensions or non-finite TACs
+
         """
         # basic input checks
         if reftac.num_elements != 1:
-            raise ValueError("Reference TAC is not 1-D")
+            msg = "Reference TAC is not 1-D"
+            raise ValueError(msg)
         if not np.all(np.isfinite(reftac.dataobj)):
-            raise ValueError("Reference TAC has non-finite value(s)")
+            msg = "Reference TAC has non-finite value(s)"
+            raise ValueError(msg)
         if not np.all(np.isfinite(tacs.dataobj)):
-            raise ValueError("TAC(s) has/have non-finite value(s)")
+            msg = "TAC(s) has/have non-finite value(s)"
+            raise ValueError(msg)
 
-        if not tacs.num_frames == reftac.num_frames:
-            raise ValueError("reftac and tacs must have same length")
+        if tacs.num_frames != reftac.num_frames:
+            msg = "reftac and tacs must have same length"
+            raise ValueError(msg)
         if not np.all(tacs.frame_start == reftac.frame_start):
-            raise ValueError("reftac and tacs should have same frame starts")
+            msg = "reftac and tacs should have same frame starts"
+            raise ValueError(msg)
         if not np.all(tacs.frame_duration == reftac.frame_duration):
-            raise ValueError("reftac and tacs should have same frame ends")
+            msg = "reftac and tacs should have same frame ends"
+            raise ValueError(msg)
 
         self.reftac: TemporalMatrix = reftac
         self.tacs: TemporalMatrix | TemporalImage = tacs
@@ -92,35 +106,29 @@ class KineticModel(ABC):
             AttributeError: no estimate is available (kinetic model has not
                             been fitted) or this model doesn't have such a
                             parameter
+
         """
         if param_name in self.parameters:
             # if tacs is an image and number of parameter estimates is equal
             # to the number of image voxels, then return parameter as an image;
             # otherwise, return as a matrix
             if isinstance(self.tacs, TemporalImage):
-                # image_maker = self.tacs.img.__class__
-                # param_img: SpatialImage = image_maker(
-                #     self.parameters[param_name],
-                #     self.tacs.img.affine,
-                #     self.tacs.img.header,
-                # )
                 param_img: SpatialImage = image_maker(
-                    self.parameters[param_name], self.tacs.img
+                    self.parameters[param_name],
+                    self.tacs.img,
                 )
                 return param_img
-            else:
-                param_vector: NumpyNumberArray = self.parameters[param_name]
-                return param_vector
-        elif param_name == "BPND" and "DVR" in self.parameters:
+            param_vector: NumpyNumberArray = self.parameters[param_name]
+            return param_vector
+        if param_name == "BPND" and "DVR" in self.parameters:
             self.parameters[param_name] = self.parameters["DVR"] - 1
             return self.get_parameter(param_name)
-        elif param_name == "DVR" and "BPND" in self.parameters:
+        if param_name == "DVR" and "BPND" in self.parameters:
             self.parameters[param_name] = self.parameters["BPND"] + 1
             return self.get_parameter(param_name)
-        else:
-            raise AttributeError(
-                "No estimate available for parameter " f"{param_name}."
-            )
+
+        msg = f"No estimate available for parameter {param_name}."
+        raise AttributeError(msg)
 
     def set_parameter(
         self,
@@ -137,13 +145,13 @@ class KineticModel(ABC):
                   3-D (for TemporalImage TACs) binary mask that defines where
                   the kinetic model was fitted. Elements outside the mask will
                   be set to to 0 in parametric outputs.
+
         """
-        # if param_name not in self.__class__.get_param_names():
-        #     raise ValueError("No such parameter defined for kinetic model")
         if mask is None:
             if hasattr(param, "size") and param.size == self.tacs.num_elements:
                 self.parameters[param_name] = np.reshape(
-                    param, self.tacs.dataobj.shape[:-1]
+                    param,
+                    self.tacs.dataobj.shape[:-1],
                 )
             else:
                 self.parameters[param_name] = param
@@ -155,4 +163,3 @@ class KineticModel(ABC):
     @abstractmethod
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""
-        pass

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dynamicpet"
-version = "0.1.4"
+version = "0.1.5"
 description = "Dynamic PET"
 authors = ["Murat Bilgel <bilgelm@gmail.com>"]
 license = "MIT"
@@ -62,6 +62,7 @@ matplotlib = "^3.9.2"
 matplotlib-stubs = "^0.2.0"
 nilearn = "^0.10.4"
 jupytext = "^1.16.4"
+ruff = "^0.9.2"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
