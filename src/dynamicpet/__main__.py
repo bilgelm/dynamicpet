@@ -162,7 +162,7 @@ def denoise(  # noqa: PLR0912, PLR0913
     froot, ext, addext = splitext_addext(pet)
     if outputdir:
         odir = Path(outputdir)
-        odir.mkdir(exist_ok=True)
+        odir.mkdir(parents=True, exist_ok=True)
         bname = Path(froot).name
         # if the input file name follows the PET-BIDS convention, it should end
         # with "_pet". Need to move this to the end of the new file name to
@@ -361,7 +361,7 @@ def kineticmodel(  # noqa: C901, PLR0912, PLR0913, PLR0915
 
     if outputdir:
         odir = Path(outputdir)
-        odir.mkdir(exist_ok=True)
+        odir.mkdir(parents=True, exist_ok=True)
         bname = Path(froot).name
         froot = str(odir / bname)
 
