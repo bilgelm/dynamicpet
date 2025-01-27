@@ -98,7 +98,6 @@ jobs:
 
       - name: Safety CLI API key
         uses: pyupio/safety-action@v1
-        if: matrix.session == 'safety' && matrix.os == 'ubuntu-latest'
         with:
           api-key: ${{ secrets.SAFETY_API_KEY }}
 
