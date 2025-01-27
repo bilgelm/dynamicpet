@@ -14,7 +14,6 @@ jobs:
         include:
           - { python: "3.12", os: "ubuntu-latest", session: "pre-commit" }
           - { python: "3.12", os: "ubuntu-latest", session: "mypy" }
-          - { python: "3.12", os: "ubuntu-latest", session: "safety" }
           - { python: "3.12", os: "ubuntu-latest", session: "tests" }
           - { python: "3.12", os: "ubuntu-latest", session: "typeguard" }
           - { python: "3.12", os: "ubuntu-latest", session: "xdoctest" }
@@ -96,12 +95,6 @@ jobs:
           key: ${{ steps.pre-commit-cache.outputs.result }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
             ${{ steps.pre-commit-cache.outputs.result }}-
-
-      - name: Safety CLI API key
-        if: matrix.session == 'safety'
-        with:
-          api-key: ${{ secrets.SAFETY_API_KEY }}
-        uses: pyupio/safety-action@v1
 
       - name: Run Nox
         run: |
