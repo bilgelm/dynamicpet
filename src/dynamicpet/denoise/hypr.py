@@ -1,11 +1,14 @@
 """HYPR denoising."""
 
-# from scipy.ndimage import uniform_filter
+from typing import TYPE_CHECKING
+
 import numpy as np
 from nibabel.processing import smooth_image
-from nibabel.spatialimages import SpatialImage
 
-from ..petbids.petbidsimage import PETBIDSImage
+from dynamicpet.petbids.petbidsimage import PETBIDSImage
+
+if TYPE_CHECKING:
+    from nibabel.spatialimages import SpatialImage
 
 
 def hypr_lr(ti: PETBIDSImage, fwhm: float) -> PETBIDSImage:
@@ -24,6 +27,7 @@ def hypr_lr(ti: PETBIDSImage, fwhm: float) -> PETBIDSImage:
 
     Returns:
         HYPR-LR denoised dynamic PET
+
     """
     # decay uncorrect the PET image
     i = ti.decay_uncorrect()
@@ -32,8 +36,8 @@ def hypr_lr(ti: PETBIDSImage, fwhm: float) -> PETBIDSImage:
     i_c: SpatialImage = i.dynamic_mean(weight_by="frame_duration")
 
     # convolve both ti and weighted average by a low-pass filter (3D boxcar)
-    ixf: SpatialImage = smooth_image(i.img, fwhm)  # type: ignore
-    i_cxf: SpatialImage = smooth_image(i_c, fwhm)  # type: ignore
+    ixf: SpatialImage = smooth_image(i.img, fwhm)  # type: ignore[no-untyped-call]
+    i_cxf: SpatialImage = smooth_image(i_c, fwhm)  # type: ignore[no-untyped-call]
 
     # add small number to the denominator to prevent zero division
     i_w_dataobj = ixf.dataobj / (i_cxf.dataobj[..., np.newaxis] + np.finfo(float).eps)

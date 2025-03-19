@@ -1,22 +1,29 @@
 """PETBIDSMatrix class."""
 
+from __future__ import annotations
+
 import csv
-import os.path as op
 from copy import deepcopy
-from os import PathLike
-from typing import Literal
+from pathlib import Path
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyNumberArray
-from ..typing_utils import RealNumber
-from .petbidsjson import PetBidsJson
-from .petbidsjson import get_frametiming_in_mins
-from .petbidsjson import read_json
-from .petbidsjson import update_frametiming_from
-from .petbidsjson import write_json
+from dynamicpet.petbids.petbidsjson import (
+    PetBidsJson,
+    get_frametiming_in_mins,
+    read_json,
+    update_frametiming_from,
+    write_json,
+)
+from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
+
 from .petbidsobject import PETBIDSObject
+
+if TYPE_CHECKING:
+    from os import PathLike
+
+    from dynamicpet.typing_utils import NumpyNumberArray, RealNumber
 
 
 class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
@@ -33,6 +40,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         frame_duration: vector containing the durations of each frame, in min
         json_dict: PET-BIDS json dictionary
         elem_names: list of k element names
+
     """
 
     def __init__(
@@ -47,6 +55,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
             dataobj: vector or k x num_frames matrix
             json_dict: PET-BIDS json dictionary
             elem_names: list of k ROI names
+
         """
         frame_start, frame_duration = get_frametiming_in_mins(json_dict)
 
@@ -55,12 +64,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         # need to make a copy of json_dict before storing
         self.json_dict: PetBidsJson = deepcopy(json_dict)
 
-    # def get_elem(self, elem: str) -> "PETBIDSMatrix":
-    #     """Get timeseries data for a specific element."""
-    #     i = self.elem_names.index(elem)
-    #     return PETBIDSMatrix(self.dataobj[i], self.json_dict, [elem])
-
-    def extract(self, start_time: RealNumber, end_time: RealNumber) -> "PETBIDSMatrix":
+    def extract(self, start_time: RealNumber, end_time: RealNumber) -> PETBIDSMatrix:
         """Extract a temporally shorter PETBIDSMatrix from a PETBIDSMatrix.
 
         Args:
@@ -68,15 +72,15 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
             end_time: time (min) at which to stop relative to TimeZero, incl.
 
         Returns:
-            extracted_img: extracted PETBIDSMatrix
+            extracted PETBIDSMatrix
+
         """
         extracted_matrix = super().extract(start_time, end_time)
         json_dict = update_frametiming_from(self.json_dict, extracted_matrix)
 
-        extract_res = PETBIDSMatrix(extracted_matrix.dataobj, json_dict)
-        return extract_res
+        return PETBIDSMatrix(extracted_matrix.dataobj, json_dict)
 
-    def concatenate(self, other: "PETBIDSMatrix") -> "PETBIDSMatrix":  # type: ignore
+    def concatenate(self, other: PETBIDSMatrix) -> PETBIDSMatrix:  # type: ignore[override]
         """Concatenate another PETBIDSMatrix at the end (in time).
 
         Args:
@@ -84,6 +88,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Returns:
             concatenated PETBIDSMatrix
+
         """
         newdecaycorrecttime, original_anchor = self._decay_correct_offset(other)
         other = other.decay_correct(decaycorrecttime=newdecaycorrecttime)
@@ -96,7 +101,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         return concat_res
 
-    def decay_correct(self, decaycorrecttime: float = 0) -> "PETBIDSMatrix":
+    def decay_correct(self, decaycorrecttime: float = 0) -> PETBIDSMatrix:
         """Return decay corrected PETBIDSMatrix.
 
         Args:
@@ -104,6 +109,7 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Returns:
             decay corrected TACs
+
         """
         tacs = self.get_decay_corrected_tacs(decaycorrecttime)
         corrected_tacs = np.reshape(tacs, self.shape)
@@ -116,23 +122,24 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         return PETBIDSMatrix(corrected_tacs, json_dict)
 
-    def decay_uncorrect(self) -> "PETBIDSMatrix":
+    def decay_uncorrect(self) -> PETBIDSMatrix:
         """Return decay uncorrected PETBIDSMatrix."""
         tacs = self.get_decay_uncorrected_tacs()
         uncorrected_tacs = np.reshape(tacs, self.shape)
 
         json_dict = deepcopy(self.json_dict)
         json_dict["ImageDecayCorrected"] = False
-        # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
-        # do anything about it
+        # PET-BIDS still requires "ImageDecayCorrectionTime" tag,
+        # so we don't do anything about it
 
         return PETBIDSMatrix(uncorrected_tacs, json_dict)
 
     def to_filename(
         self,
         filename: str | PathLike[str],
-        save_json: bool = False,
         anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
+        *,
+        save_json: bool = False,
     ) -> None:
         """Save to file.
 
@@ -145,8 +152,9 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
 
         Raises:
             ValueError: file is not a tsv file
+
         """
-        with open(filename, "w") as f:
+        with Path(filename).open("w") as f:
             tsvwriter = csv.writer(f, delimiter="\t")
             tsvwriter.writerow(self.elem_names)
             for row in self.dataobj.T:
@@ -155,15 +163,17 @@ class PETBIDSMatrix(TemporalMatrix, PETBIDSObject):
         if save_json:
             self.set_timezero(anchor)
 
-            fbase, fext = op.splitext(filename)
-            if fext != ".tsv":
-                raise ValueError("output file must be a tsv file")
-            jsonfilename = fbase + ".json"
+            fname = Path(filename)
+            if fname.suffix != ".tsv":
+                msg = "output file must be a tsv file"
+                raise ValueError(msg)
+            jsonfilename = fname.with_suffix(".json")
             write_json(self.json_dict, jsonfilename)
 
 
 def load(
-    filename: str | PathLike[str], jsonfilename: str | PathLike[str] | None = None
+    filename: str | PathLike[str],
+    jsonfilename: str | PathLike[str] | None = None,
 ) -> PETBIDSMatrix:
     """Read a tsv file containing temporal entries.
 
@@ -178,19 +188,22 @@ def load(
 
     Raises:
         ValueError: file is not a tsv file
+
     """
-    fbase, fext = op.splitext(filename)
-    if fext != ".tsv":
-        raise ValueError("output file must be a tsv file")
+    fname = Path(filename)
+
+    if fname.suffix != ".tsv":
+        msg = "output file must be a tsv file"
+        raise ValueError(msg)
 
     if jsonfilename is None:
-        jsonfilename = fbase + ".json"
+        jsonfilename = fname.with_suffix(".json")
     json_dict = read_json(jsonfilename)
 
-    with open(filename) as f:
+    with fname.open() as f:
         tsvreader = csv.reader(f, delimiter="\t")
         header = next(tsvreader)
 
-    tsv = np.genfromtxt(filename, delimiter="\t", skip_header=1)
+    tsv = np.genfromtxt(fname, delimiter="\t", skip_header=1)
 
     return PETBIDSMatrix(tsv.T, json_dict, header)
