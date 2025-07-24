@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.4
 #   kernelspec:
-#     display_name: hackthon
+#     display_name: dynamicpet-TMt2p5Pp-py3.12
 #     language: python
 #     name: python3
 # ---
@@ -191,7 +191,7 @@ res.get_param_names()
 
 # %%
 plot_anat(
-    res.get_parameter("suvr"),
+    res.get_parameter("SUVR"),
     colorbar=True,
     draw_cross=False,
     title="SUVR image",

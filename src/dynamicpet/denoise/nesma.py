@@ -3,9 +3,9 @@
 import numpy as np
 from tqdm import tqdm
 
-from ..petbids.petbidsimage import PETBIDSImage
-from ..temporalobject.temporalimage import image_maker
-from ..typing_utils import NumpyNumberArray
+from dynamicpet.petbids.petbidsimage import PETBIDSImage
+from dynamicpet.temporalobject.temporalimage import image_maker
+from dynamicpet.typing_utils import NumpyNumberArray
 
 
 def nesma_semiadaptive(
@@ -21,7 +21,7 @@ def nesma_semiadaptive(
     Reference:
     Bouhrara M, Reiter DA, Maring MC, Bonny JM, Spencer RG. Use of the NESMA
     Filter to Improve Myelin Water Fraction Mapping with Brain MRI.
-    J Neuroimaging. 2018;28(6):640–9. https://doi.org/10.1111/jon.12537
+    J Neuroimaging. 2018;28(6):640-9. https://doi.org/10.1111/jon.12537
 
     Args:
         ti: 4-D image
@@ -38,27 +38,33 @@ def nesma_semiadaptive(
 
     Raises:
         ValueError: incorrect input(s)
+
     """
     if thresh < 0 or thresh > 1:
-        raise ValueError("thresh must be between 0 and 1")
-    if ti.img.ndim != 4:
-        raise ValueError("input image must be 4-D")
-    if mask.ndim != 3:
-        raise ValueError("mask must be 3-D")
+        msg = "thresh must be between 0 and 1"
+        raise ValueError(msg)
+    if ti.img.ndim != 4:  # noqa: PLR2004
+        msg = "input image must be 4-D"
+        raise ValueError(msg)
+    if mask.ndim != 3:  # noqa: PLR2004
+        msg = "mask must be 3-D"
+        raise ValueError(msg)
     if not np.all(ti.img.shape[:-1] == mask.shape):
-        raise ValueError("input image and mask shapes must be compatible")
+        msg = "input image and mask shapes must be compatible"
+        raise ValueError(msg)
 
     m, n, o, _ = ti.img.shape
 
     if m <= window_half_size[0] or n <= window_half_size[1] or o <= window_half_size[2]:
-        raise ValueError("image size should be greater than window_half_size")
+        msg = "image size should be greater than window_half_size"
+        raise ValueError(msg)
 
     s_nesma = np.copy(ti.dataobj)
     vsm = np.zeros(ti.shape[:-1])
 
     indices = np.where(mask)
 
-    for i, j, k in tqdm(zip(*indices, strict=True), total=np.sum(mask)):  # type: ignore
+    for i, j, k in tqdm(zip(*indices, strict=True), total=np.sum(mask)):  # type: ignore[call-overload]
         tmin = max(k - window_half_size[2], 0)
         tmax = min(k + window_half_size[2] + 1, o)
 

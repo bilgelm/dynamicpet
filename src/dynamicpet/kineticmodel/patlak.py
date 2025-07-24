@@ -1,4 +1,4 @@
-"""Logan plot."""
+"""Patlak plot."""
 
 from __future__ import annotations
 
@@ -21,32 +21,32 @@ if TYPE_CHECKING:
     from dynamicpet.typing_utils import NumpyNumberArray
 
 
-class LRTM(KineticModel):
-    """Logan reference tissue model.
+class PRTM(KineticModel):
+    """Patlak reference tissue model.
 
-    Also known as Logan plot, graphical Logan, Logan graphical analysis (or
-    some permutation thereof these words) with reference tissue.
+    Also known as Patlak plot, Gjedde-Patlak plot, Patlak-Rutland plot,
+    graphical Patlak, Patlak graphical method (or some permutation thereof these
+    words) with reference tissue.
     "Non-invasive" can also be used instead of "with reference tissue" to convey
     the same meaning.
 
     Reference:
-    Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution
-    volume ratios without blood sampling from graphical analysis of PET data.
-    J Cereb Blood Flow Metab. 1996 Sep;16(5):834-40.
+    Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer
+    constants from multiple-time uptake data. Generalizations. J Cereb Blood
+    Flow Metab. 1985 Dec;5(4):584-90.
     """
 
     @classmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
-        return ["DVR"]
+        return ["slope", "intercept"]
 
-    def fit(  # noqa: max-complexity: 12
+    def fit(
         self,
         mask: NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "trapz",
         weight_by: WEIGHT_OPTS | NumpyNumberArray | None = "frame_duration",
         tstar: float = 0,
-        k2prime: float | None = None,
     ) -> None:
         """Estimate model parameters.
 
@@ -64,8 +64,6 @@ class LRTM(KineticModel):
                   to fit the kinetic model. Elements outside the mask will
                   be set to to 0 in parametric estimate outputs.
             tstar: time beyond which to assume linearity
-            k2prime: (avg.) effective tissue-to-plasma efflux constant in the
-                     reference region, in unit of 1/min
 
         """
         # get reference TAC as a 1-D vector
@@ -78,64 +76,36 @@ class LRTM(KineticModel):
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
         num_elements = tacs.num_elements
         tacs_mat: NumpyNumberArray = tacs.dataobj
-        int_tacs_mat: NumpyNumberArray = tacs.cumulative_integral(integration_type)
 
         # time indexing should be done after integrating
         t_idx = tacs.frame_start >= tstar
         reftac_tstar = reftac[t_idx, :]
         int_reftac_tstar = int_reftac[t_idx, :]
         tacs_mat_tstar = tacs_mat[:, t_idx]
-        int_tacs_mat_tstar = int_tacs_mat[:, t_idx]
 
+        x = np.column_stack(
+            (np.ones_like(int_reftac_tstar), int_reftac_tstar / reftac_tstar),
+        )
         weights = tacs.get_weights(weight_by)
-        w_star = np.diag(weights[t_idx])
+        w = np.diag(weights[t_idx])
 
-        dvr = np.zeros((num_elements, 1))
-
-        if not k2prime:
-            # TODO @bilgelm: sanity checks  # noqa: TD003, FIX002
-            # Check Eq. 7 assumption (i.e., that tac / reftac is reasonably
-            # constant) by calculating R2 etc. for each tac.
-            # Display warning if assumption is off.
-            pass
+        slope = np.ones((num_elements, 1))
+        intercept = np.zeros((num_elements, 1))
 
         for k in trange(num_elements):
-            # get TAC and its cumulative integral as 1-D vectors
+            # get TAC as 1-D vector
             tac_tstar = tacs_mat_tstar[k, :][:, np.newaxis]
 
-            # special case when tac is the same as reftac
-            if np.allclose(tac_tstar, reftac_tstar):
-                dvr[k] = 1
-
-                continue
-
-            int_tac_tstar = int_tacs_mat_tstar[k, :][:, np.newaxis]
-
-            # ----- Get DVR -----
-            # Set up the weighted linear regression model based on Logan et al.:
-            # - use Eq. 6 if k2prime is provided
-            # - use Eq. 7 if k2prime is not provided
-
-            x = np.column_stack(
-                (
-                    np.ones_like(tac_tstar),
-                    (int_reftac_tstar + (reftac_tstar / k2prime if k2prime else 0))
-                    / tac_tstar,
-                ),
-            )
-            y = int_tac_tstar / tac_tstar
-
+            y = tac_tstar / reftac_tstar
             b: NumpyNumberArray
             try:
-                b = solve(x.T @ w_star @ x, x.T @ w_star @ y, assume_a="sym")
+                b = solve(x.T @ w @ x, x.T @ w @ y, assume_a="sym")
+                intercept[k], slope[k] = b
             except LinAlgError:
-                b = np.ones((2, 1))
+                pass
 
-            # distribution volume ratio
-            dvr[k] = b[1]
-
-        self.set_parameter("DVR", dvr, mask)
-        # should tstar (and k2prime?) also be stored?
+        self.set_parameter("slope", slope, mask)
+        self.set_parameter("intercept", intercept, mask)
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""

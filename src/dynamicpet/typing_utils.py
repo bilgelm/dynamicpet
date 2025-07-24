@@ -1,11 +1,9 @@
 """Type annotation utilities."""
 
-from typing import Any
-from typing import Union
+from typing import Any, Union
 
 import numpy as np
 from numpy.typing import NDArray
-
 
 NumpyRealNumber = Union[np.integer[Any], np.floating[Any]]
 RealNumber = Union[int, float, NumpyRealNumber]

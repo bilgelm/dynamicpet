@@ -6,23 +6,24 @@ defined here.
 It might be useful to make this into its own class in the future.
 """
 
+from __future__ import annotations
+
 import datetime
-import os.path as op
 import warnings
 from copy import deepcopy
 from json import dump as json_dump
 from json import load as json_load
-from os import PathLike
-from typing import Any
-from typing import Literal
-from typing import NotRequired
-from typing import TypedDict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import numpy as np
-from numpy.typing import NDArray
 
-from ..temporalobject.temporalobject import TemporalObject
+if TYPE_CHECKING:
+    from os import PathLike
 
+    from numpy.typing import NDArray
+
+    from dynamicpet.temporalobject.temporalobject import TemporalObject
 
 # radionuclide halflives in seconds
 # turkupetcentre.net/petanalysis/decay.html
@@ -155,14 +156,16 @@ def get_hhmmss(
 
     Raises:
         ValueError: image is not decay corrected
+
     """
     # convert TimeZero to date
-    timezero = datetime.datetime.strptime(json_dict["TimeZero"], "%H:%M:%S")
+    timezero = datetime.datetime.strptime(json_dict["TimeZero"], "%H:%M:%S")  # noqa: DTZ007
     if event == "TimeZero":
         return timezero.time()
 
     if event == "ImageDecayCorrectionTime" and not json_dict["ImageDecayCorrected"]:
-        raise ValueError("Image is not decay corrected")
+        msg = "Image is not decay corrected"
+        raise ValueError(msg)
 
     # ScanStart, InjectionStart, ImageDecayCorrectionTime, FrameTimesStart are
     # all relative to TimeZero, in seconds
@@ -177,17 +180,17 @@ def get_hhmmss(
 
 def timediff(firsttime: datetime.time, secondtime: datetime.time) -> float:
     """Get difference in seconds between two datetime.time objects HH:MM:SS."""
-    td = (
+    return (
         3600 * (firsttime.hour - secondtime.hour)
         + 60 * (firsttime.minute - secondtime.minute)
         + firsttime.second
         - secondtime.second
     )
-    return td
 
 
 def update_frametiming_from(
-    json_dict: PetBidsJson, temporal_object: TemporalObject[Any]
+    json_dict: PetBidsJson,
+    temporal_object: TemporalObject[Any],
 ) -> PetBidsJson:
     """Update frame timing information in PET-BIDS json from TemporalObject.
 
@@ -197,6 +200,7 @@ def update_frametiming_from(
 
     Returns:
         updated json dictionary
+
     """
     new_json_dict: PetBidsJson = deepcopy(json_dict)
     # convert from minutes to seconds
@@ -230,22 +234,27 @@ def get_frametiming_in_mins(
 
     Raises:
         ValueError: invalid frame timing
+
     """
     frame_start: NDArray[np.double] = np.array(
-        json_dict["FrameTimesStart"], dtype=np.double
+        json_dict["FrameTimesStart"],
+        dtype=np.double,
     )
     frame_duration: NDArray[np.double] = np.array(
-        json_dict["FrameDuration"], dtype=np.double
+        json_dict["FrameDuration"],
+        dtype=np.double,
     )
 
     inj_start: float = json_dict["InjectionStart"]
     scan_start: float = json_dict["ScanStart"]
     if not (inj_start == 0 or scan_start == 0):
         # invalid PET BIDS json
-        raise ValueError("Neither InjectionStart nor ScanStart is 0")
+        msg = "Neither InjectionStart nor ScanStart is 0"
+        raise ValueError(msg)
 
     if frame_start[0] < scan_start:
-        raise ValueError("First time frame starts before ScanStart")
+        msg = "First time frame starts before ScanStart"
+        raise ValueError(msg)
     if frame_start[-1] + frame_duration[-1] < inj_start:
         warnings.warn("No data acquired after injection", stacklevel=2)
 
@@ -272,11 +281,13 @@ def read_json(jsonfilename: str | PathLike[str]) -> PetBidsJson:
 
     Raises:
         FileNotFoundError: jsonfilename was not found
-    """
-    if not op.exists(jsonfilename):
-        raise FileNotFoundError("No such file: '%s'" % jsonfilename)
 
-    with open(jsonfilename) as f:
+    """
+    if not Path(jsonfilename).exists():
+        msg = f"No such file: {jsonfilename}"
+        raise FileNotFoundError(msg)
+
+    with Path(jsonfilename).open() as f:
         json_dict: PetBidsJson = json_load(f)
         return json_dict
 
@@ -287,6 +298,7 @@ def write_json(json_dict: PetBidsJson, filename: str | PathLike[str]) -> None:
     Args:
         json_dict: PET BIDS json dictionary
         filename: file name for the output
+
     """
-    with open(filename, "w") as f:
+    with Path(filename).open("w") as f:
         json_dump(json_dict, f, indent=4)

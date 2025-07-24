@@ -1,33 +1,34 @@
 """Command-line interface."""
 
+from __future__ import annotations
+
 import csv
-import os
 import re
 import warnings
 from json import dump as json_dump
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 import numpy as np
 from nibabel.filename_parser import splitext_addext
 from nibabel.loadsave import load as nib_load
-from nibabel.spatialimages import SpatialImage
 
 from dynamicpet import __version__
-from dynamicpet.denoise import hypr
-from dynamicpet.denoise import nesma
-from dynamicpet.kineticmodel.kineticmodel import KineticModel
-from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996
-from dynamicpet.kineticmodel.srtm import SRTMZhou2003
+from dynamicpet.denoise import hypr, nesma
+from dynamicpet.kineticmodel.srtm import SRTMLammertsma1996, SRTMZhou2003
 from dynamicpet.kineticmodel.suvr import SUVR
-from dynamicpet.petbids import PETBIDSImage
-from dynamicpet.petbids import PETBIDSMatrix
+from dynamicpet.petbids import PETBIDSImage, PETBIDSMatrix
 from dynamicpet.petbids.petbidsimage import load as petbidsimage_load
 from dynamicpet.petbids.petbidsmatrix import load as petbidsmatrix_load
-from dynamicpet.temporalobject import TemporalMatrix
-from dynamicpet.temporalobject.temporalobject import INTEGRATION_TYPE_OPTS
-from dynamicpet.temporalobject.temporalobject import WEIGHT_OPTS
-from dynamicpet.typing_utils import NumpyNumberArray
+from dynamicpet.temporalobject.temporalobject import INTEGRATION_TYPE_OPTS, WEIGHT_OPTS
 
+if TYPE_CHECKING:
+    from nibabel.spatialimages import SpatialImage
+
+    from dynamicpet.kineticmodel.kineticmodel import KineticModel
+    from dynamicpet.temporalobject import TemporalMatrix
+    from dynamicpet.typing_utils import NumpyNumberArray
 
 IMPLEMENTED_KMS = [
     "SUVR",
@@ -91,7 +92,7 @@ WEIGHTS = str(WEIGHT_OPTS).replace("'", "").split("[")[1].split("]")[0].split(",
     ),
 )
 @click.option("--json", default=None, type=str, help="PET-BIDS json file")
-def denoise(
+def denoise(  # noqa: PLR0912, PLR0913
     pet: str,
     method: str,
     fwhm: float | None,
@@ -121,7 +122,8 @@ def denoise(
         if fwhm:
             res = hypr.hypr_lr(pet_img, fwhm)
         else:
-            raise ValueError("fwhm must be specified for HYPR-LR")
+            msg = "fwhm must be specified for HYPR-LR"
+            raise ValueError(msg)
     elif method == "NESMA":
         doc = nesma.nesma_semiadaptive.__doc__
 
@@ -129,34 +131,43 @@ def denoise(
         fwhm = None
 
         if mask:
-            mask_img: SpatialImage = nib_load(mask)  # type: ignore
+            mask_img: SpatialImage = nib_load(mask)  # type: ignore[assignment]
             # check that mask is in the same space as pet
             if not np.all(pet_img.img.affine == mask_img.affine):
-                raise ValueError("PET and mask are not in the same space")
+                msg = "PET and mask are not in the same space"
+                raise ValueError(msg)
             mask_img_mat: NumpyNumberArray = mask_img.get_fdata().astype("bool")
 
             if window_half_size:
                 if thresh:
                     res, _ = nesma.nesma_semiadaptive(
-                        pet_img, mask_img_mat, window_half_size, thresh
+                        pet_img,
+                        mask_img_mat,
+                        window_half_size,
+                        thresh,
                     )
                 else:
-                    raise ValueError("thresh must be specified for NESMA")
+                    msg = "thresh must be specified for NESMA"
+                    raise ValueError(msg)
             else:
-                raise ValueError("window_half_size must be specified for NESMA")
+                msg = "window_half_size must be specified for NESMA"
+                raise ValueError(msg)
         else:
-            raise ValueError("mask must be specified for NESMA")
+            msg = "mask must be specified for NESMA"
+            raise ValueError(msg)
     else:
-        raise NotImplementedError(f"Denoising method {method} is not supported")
+        msg = f"Denoising method {method} is not supported"
+        raise NotImplementedError(msg)
 
     froot, ext, addext = splitext_addext(pet)
     if outputdir:
-        os.makedirs(outputdir, exist_ok=True)
-        bname = os.path.basename(froot)
+        odir = Path(outputdir)
+        odir.mkdir(parents=True, exist_ok=True)
+        bname = Path(froot).name
         # if the input file name follows the PET-BIDS convention, it should end
         # with "_pet". Need to move this to the end of the new file name to
         # maintain compatibility with the PET-BIDS Derivatives convention.
-        froot = re.sub("_pet$", "", os.path.join(outputdir, bname))
+        froot = re.sub("_pet$", "", str(odir / bname))
     output = froot + "_desc-" + method.lower() + "_pet" + ext + addext
     output_json = froot + "_desc-" + method.lower() + "_pet.json"
     res.to_filename(output)
@@ -175,13 +186,13 @@ def denoise(
         "Description": (
             re.sub(r"\s+", " ", doc.split("Args:")[0]).strip() if doc else ""
         ),
-        # "Sources": [pet],
+        # "Sources": [pet],  # noqa: ERA001
         "SoftwareName": "dynamicpet",
         "SoftwareVersion": __version__,
         "CommandLine": cmd,
     }
 
-    with open(output_json, "w") as f:
+    with Path(output_json).open("w") as f:
         json_dump(derivative_json_dict, f, indent=4)
 
 
@@ -242,10 +253,16 @@ def denoise(
     ),
 )
 @click.option(
-    "--start", default=None, type=float, help="Start of time window for model in min"
+    "--start",
+    default=None,
+    type=float,
+    help="Start of time window for model in min",
 )
 @click.option(
-    "--end", default=None, type=float, help="End of time window for model in min"
+    "--end",
+    default=None,
+    type=float,
+    help="End of time window for model in min",
 )
 @click.option(
     "--fwhm",
@@ -270,7 +287,7 @@ def denoise(
         "'rect' is rectangular integration."
     ),
 )
-def kineticmodel(  # noqa: C901
+def kineticmodel(  # noqa: C901, PLR0912, PLR0913, PLR0915
     pet: str,
     model: str,
     refroi: str | None,
@@ -295,7 +312,11 @@ def kineticmodel(  # noqa: C901
     froot, ext, addext = splitext_addext(pet)
 
     pet_img, reftac, petmask_img_mat = parse_kineticmodel_inputs(
-        pet, json, refroi, refmask, petmask
+        pet,
+        json,
+        refroi,
+        refmask,
+        petmask,
     )
 
     if start is None:
@@ -335,12 +356,14 @@ def kineticmodel(  # noqa: C901
                 fwhm=fwhm,
             )
         case _:
-            raise ValueError(f"Model {model} is not supported")
+            msg = f"Model {model} is not supported"
+            raise ValueError(msg)
 
     if outputdir:
-        os.makedirs(outputdir, exist_ok=True)
-        bname = os.path.basename(froot)
-        froot = os.path.join(outputdir, bname)
+        odir = Path(outputdir)
+        odir.mkdir(parents=True, exist_ok=True)
+        bname = Path(froot).name
+        froot = str(odir / bname)
 
     if isinstance(pet_img, PETBIDSMatrix):
         # if the input file name follows the PET-BIDS Derivatives convention,
@@ -354,11 +377,11 @@ def kineticmodel(  # noqa: C901
         for i, param in enumerate(km.parameters.keys()):
             data[i] = km.get_parameter(param)
         datat = data.T
-        with open(output, "w") as f:
+        with Path(output).open("w") as f:
             tsvwriter = csv.writer(f, delimiter="\t")
-            tsvwriter.writerow(["name"] + list(km.parameters.keys()))
+            tsvwriter.writerow(["name", *list(km.parameters.keys())])
             for i, elem in enumerate(pet_img.elem_names):
-                tsvwriter.writerow([elem] + datat[i].tolist())
+                tsvwriter.writerow([elem, *datat[i].tolist()])
     else:
         # if the input file name follows the PET-BIDS convention, it should end
         # with "_pet". Need to remove this to maintain compatibility with the
@@ -366,8 +389,8 @@ def kineticmodel(  # noqa: C901
         froot = re.sub("_pet$", "", froot)
 
         # save estimated parameters as image
-        for param in km.parameters.keys():
-            res_img: SpatialImage = km.get_parameter(param)  # type: ignore
+        for param in km.parameters:
+            res_img: SpatialImage = km.get_parameter(param)  # type: ignore[assignment]
             output = (
                 froot
                 + "_model-"
@@ -410,12 +433,11 @@ def kineticmodel(  # noqa: C901
     doc = km.__class__.__doc__
     derivative_json_dict = {
         "Description": re.sub(r"\s+", " ", doc) if doc else "",
-        # "Sources": [pet],
+        # "Sources": [pet],  # noqa: ERA001
         "ModelName": model_abbr,
         "ReferenceRegion": refroi if refroi else refmask,
         "AdditionalModelDetails": (
-            f"Frame weighting by: {weight_by}. "
-            + f"Integration type: {integration_type}.",
+            f"Frame weighting by: {weight_by}. Integration type: {integration_type}."
         ),
         "InputValues": inputvalues,
         "InputValuesLabels": inputvalueslabels,
@@ -425,7 +447,7 @@ def kineticmodel(  # noqa: C901
         "CommandLine": cmd,
     }
 
-    with open(output_json, "w") as f:
+    with Path(output_json).open("w") as f:
         json_dump(derivative_json_dict, f, indent=4)
 
 
@@ -458,14 +480,17 @@ def parse_kineticmodel_inputs(
     Raises:
         ValueError: refroi or refmask is not specified, or PET and mask are not
                     in the same space
+
     """
     if tac_object_file[-4:] == ".tsv":
         # if it is a tsv, then read as PETBIDSMatrix
         if not refroi:
-            raise ValueError("refroi must be specified when tac_object is a tsv file")
+            msg = "refroi must be specified when tac_object is a tsv file"
+            raise ValueError(msg)
 
         tac_object_tm: PETBIDSMatrix = petbidsmatrix_load(
-            tac_object_file, tac_object_json
+            tac_object_file,
+            tac_object_json,
         )
         reftac = tac_object_tm.get_elem(refroi)
 
@@ -473,21 +498,24 @@ def parse_kineticmodel_inputs(
 
     # otherwise, read as PETBIDSImage
     if not refmask:
-        raise ValueError("refmask must be specified when tac_object is an image")
+        msg = "refmask must be specified when tac_object is an image"
+        raise ValueError(msg)
 
     tac_object: PETBIDSImage = petbidsimage_load(tac_object_file, tac_object_json)
-    refmask_img: SpatialImage = nib_load(refmask)  # type: ignore
+    refmask_img: SpatialImage = nib_load(refmask)  # type: ignore[assignment]
     # check that refmask is in the same space as pet
     if not np.all(tac_object.img.affine == refmask_img.affine):
-        raise ValueError("PET and refmask are not in the same space")
+        msg = "PET and refmask are not in the same space"
+        raise ValueError(msg)
     refmask_img_mat: NumpyNumberArray = refmask_img.get_fdata().astype("bool")
 
     petmask_img_mat: NumpyNumberArray | None
     if petmask:
-        petmask_img: SpatialImage = nib_load(petmask)  # type: ignore
+        petmask_img: SpatialImage = nib_load(petmask)  # type: ignore[assignment]
         # check that petmask is in the same space as pet
         if not np.all(tac_object.img.affine == petmask_img.affine):
-            raise ValueError("PET image and petmask are not in the same space")
+            msg = "PET image and petmask are not in the same space"
+            raise ValueError(msg)
 
         petmask_img_mat = petmask_img.get_fdata().astype("bool")
         # check that refmask is fully within petmask
