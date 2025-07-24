@@ -1,12 +1,17 @@
 """Standardized update value ratio (SUVR)."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from ..temporalobject.temporalimage import TemporalImage
-from ..temporalobject.temporalmatrix import TemporalMatrix
-from ..typing_utils import NumpyRealNumber
-from ..typing_utils import NumpyRealNumberArray
-from .kineticmodel import KineticModel
+from dynamicpet.kineticmodel.kineticmodel import KineticModel
+
+if TYPE_CHECKING:
+    from dynamicpet.temporalobject.temporalimage import TemporalImage
+    from dynamicpet.temporalobject.temporalmatrix import TemporalMatrix
+    from dynamicpet.typing_utils import NumpyNumberArray, NumpyRealNumber
 
 
 class SUVR(KineticModel):
@@ -20,9 +25,9 @@ class SUVR(KineticModel):
     @classmethod
     def get_param_names(cls) -> list[str]:
         """Get names of kinetic model parameters."""
-        return ["suvr"]
+        return ["SUVR"]
 
-    def fit(self, mask: NumpyRealNumberArray | None = None) -> None:
+    def fit(self, mask: NumpyNumberArray | None = None) -> None:
         """Calculate SUVR.
 
         Args:
@@ -45,20 +50,22 @@ class SUVR(KineticModel):
                                       frame_duration=frame_duration)
             >>> km = SUVR(reftac, tacs)
             >>> km.fit()
-            >>> km.get_parameter('suvr')
+            >>> km.get_parameter('SUVR')
             array([1.5, 3. ])
+
         """
         tacs: TemporalMatrix = self.tacs.timeseries_in_mask(mask)
 
-        numerator: NumpyRealNumberArray = np.sum(
-            tacs.dataobj * tacs.frame_duration, axis=-1
+        numerator: NumpyNumberArray = np.sum(
+            tacs.dataobj * tacs.frame_duration,
+            axis=-1,
         )
         denominator: NumpyRealNumber = np.sum(
-            self.reftac.dataobj * self.reftac.frame_duration
+            self.reftac.dataobj * self.reftac.frame_duration,
         )
         suvr = numerator / denominator
 
-        self.set_parameter("suvr", suvr, mask)
+        self.set_parameter("SUVR", suvr, mask)
 
     def fitted_tacs(self) -> TemporalMatrix | TemporalImage:
         """Get fitted TACs based on estimated model parameters."""

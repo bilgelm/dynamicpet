@@ -1,4 +1,4 @@
-# Dynamic PET <img src="docs/logo.png" align="right" height="150" />
+# Dynamic PET <img src="docs/logo.png" align="right" height="150" alt="Dynamic PET logo"/>
 
 <!-- [![PyPI](https://img.shields.io/pypi/v/dynamicpet.svg)][pypi_]
 [![Status](https://img.shields.io/pypi/status/dynamicpet.svg)][status]
@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/pypi/l/dynamicpet)][license]
 -->
 
-[![Read the documentation at https://dynamicpet.readthedocs.io/](https://img.shields.io/readthedocs/dynamicpet/latest.svg?label=Read%20the%20Docs)][read the docs]
+[![Read the documentation at https://bilgelm.github.io/dynamicpet](https://github.com/bilgelm/dynamicpet/actions/workflows/pages.yml/badge.svg)][read the docs]
 [![Tests](https://github.com/bilgelm/dynamicpet/workflows/Tests/badge.svg)][tests]
 [![Codecov](https://codecov.io/gh/bilgelm/dynamicpet/branch/main/graph/badge.svg)][codecov]
 
@@ -19,7 +19,7 @@
 [python version]: https://pypi.org/project/dynamicpet
 -->
 
-[read the docs]: https://dynamicpet.readthedocs.io/
+[read the docs]: https://bilgelm.github.io/dynamicpet
 [tests]: https://github.com/bilgelm/dynamicpet/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/bilgelm/dynamicpet
 [pre-commit]: https://github.com/pre-commit/pre-commit
@@ -34,8 +34,10 @@ Methods implemented in the CLI include:
 
 - Denoising
   - HighlY constrained backPRojection method constraining the backprojections to Local Regions of interest ([HYPR-LR])
+  - Nonlocal EStimation of multispectral MAgnitudes ([NESMA])
 - Reference tissue-based modeling
   - Standardized Uptake Value Ratio (SUVR)
+  - Logan Reference Tissue Model ([LRTM])
   - Simplified Reference Tissue Model (SRTM)
 
 Several implementations of estimating SRTM parameters are available:
@@ -44,7 +46,9 @@ Several implementations of estimating SRTM parameters are available:
 - Two-step SRTM (SRTM2), as described by [Wu and Carson, J Cereb Blood Flow Metab (2002)](https://doi.org/10.1097/01.WCB.0000033967.83623.34)
 - Linear Regression with Spatial Constraint (LRSC), as described by [Zhou et al., Neuroimage (2003)](<https://doi.org/10.1016/S1053-8119(03)00017-X>)
 
+[lrtm]: https://doi.org/10.1097/00004647-199609000-00008
 [hypr-lr]: https://doi.org/10.2967/jnumed.109.073999
+[nesma]: https://doi.org/10.1111/jon.12537
 
 ## Requirements
 
@@ -53,31 +57,14 @@ _Dynamic PET_ requires Python 3.11+ and the following modules:
 `nibabel` for neuroimaging data I/O and simple manipulations, and
 `click` for the CLI.
 
-To run the `kinfitr` implementations of kinetic models, you will also need an
-installation of R and the [kinfitr] R package as well as the `rpy2` Python module.
-
-[kinfitr]: https://github.com/mathesong/kinfitr
-
 ## Installation
 
 You can install _Dynamic PET_ via [pip] after cloning the repository:
 
 ```console
-$ git clone https://github.com/bilgelm/dynamicpet.git
-$ pip install -e dynamicpet
+git clone https://github.com/bilgelm/dynamicpet.git
+pip install -e dynamicpet
 ```
-
-If you would like to use kinetic models implemented in `kinfitr` with
-_Dynamic PET_, first [install R](https://cran.r-project.org)
-and the [kinfitr] R package.
-Then install _Dynamic PET_ with the `kinfitr` extra after cloning the `git`
-repository as descibed above:
-
-```console
-$ pip install -e dynamicpet[kinfitr]
-```
-
-[kinfitr]: https://github.com/mathesong/kinfitr
 
 ## Usage
 
@@ -93,22 +80,22 @@ You will then need to create a binary mask that is in the same space as the PET 
 After installing _Dynamic PET_ as described above, execute:
 
 ```console
-$ kineticmodel PET --model SRTMZhou2003 --refmask <REFMASK> --outputdir <OUTPUTDIR> --fwhm 5
+kineticmodel PET --model SRTMZhou2003 --refmask <REFMASK> --outputdir <OUTPUTDIR> --fwhm 5
 ```
 
 where
 
 ```console
-$ PET=<OPENNEURODATA>/ds001705-download/sub-000101/ses-baseline/pet/sub-000101_ses-baseline_pet.nii
+PET=<OPENNEURODATA>/ds001705-download/sub-000101/ses-baseline/pet/sub-000101_ses-baseline_pet.nii
 ```
 
 Before running these commands, replace
 `<OPENNEURODATA>` with the path to the directory where you downloaded the data from OpenNeuro and
 `<OUTPUTDIR>` with path to the directory where you'd like to save the parametric images.
 
-```{warning}
-Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model implementations are very time consuming and are not recommended for imaging data.
-```
+> [!WARNING]
+> Aside from `SUVR` and `SRTMZhou2003`, the remaining kinetic model
+> implementations are very time consuming and are not recommended for imaging data.
 
 [openneuro]: https://openneuro.org
 

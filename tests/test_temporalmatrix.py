@@ -1,10 +1,16 @@
 """Test frame timing operations."""
 
+# ruff: noqa: S101
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from dynamicpet.temporalobject import TemporalMatrix
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 
 @pytest.fixture
@@ -23,35 +29,45 @@ def tm() -> TemporalMatrix:
 
 def test_num_elements(tm: TemporalMatrix) -> None:
     """Test number of frames."""
-    assert tm.num_elements == 1
+    one = 1
+    assert tm.num_elements == one, f"Expected {one} element, got {tm.num_elements}"
 
 
 def test_num_frames(tm: TemporalMatrix) -> None:
     """Test number of frames."""
-    assert tm.num_frames == 7
+    seven = 7
+    assert tm.num_frames == seven, f"Expected {seven} frames, got {tm.num_frames}"
 
 
 def test_start_time(tm: TemporalMatrix) -> None:
     """Test start time."""
-    assert tm.start_time == 0
+    zero = 0
+    assert tm.start_time == zero, f"Expected {zero} start time, got {tm.start_time}"
 
 
 def test_end_time(tm: TemporalMatrix) -> None:
     """Test end time."""
-    assert tm.end_time == 3600
+    end_time = 3600
+    assert tm.end_time == end_time, f"Expected {end_time} end time, got {tm.end_time}"
 
 
 def test_frame_duration(tm: TemporalMatrix) -> None:
     """Test frame durations."""
+    three100 = 300
+    six100 = 600
     for i in range(2):
-        assert tm.frame_duration[i] == 300
+        assert tm.frame_duration[i] == three100, (
+            f"Expected {three100} frame duration, got {tm.frame_duration[i]}"
+        )
     for i in range(2, 7):
-        assert tm.frame_duration[i] == 600
+        assert tm.frame_duration[i] == six100, (
+            f"Expected {six100} frame duration, got {tm.frame_duration[i]}"
+        )
 
 
 def test_has_gaps_no(tm: TemporalMatrix) -> None:
     """Test if there are gaps between frames when there aren't any."""
-    assert not tm.has_gaps()
+    assert not tm.has_gaps(), "Found gaps between frames when there aren't any"
 
 
 def test_has_gaps_yes() -> None:
@@ -61,7 +77,7 @@ def test_has_gaps_yes() -> None:
         frame_start=np.array([0, 10]),
         frame_duration=np.array([5, 5]),
     )
-    assert thistm.has_gaps()
+    assert thistm.has_gaps(), "Did not find gaps between frames when there is one"
 
 
 def test_extract_time_identity(tm: TemporalMatrix) -> None:
@@ -70,10 +86,18 @@ def test_extract_time_identity(tm: TemporalMatrix) -> None:
     end_time = tm.end_time
     extr = tm.extract(start_time, end_time)
 
-    assert extr.num_elements == tm.num_elements
-    assert extr.num_frames == tm.num_frames
-    assert extr.start_time == start_time
-    assert extr.end_time == end_time
+    assert extr.num_elements == tm.num_elements, (
+        f"Expected {tm.num_elements} elements, got {extr.num_elements}"
+    )
+    assert extr.num_frames == tm.num_frames, (
+        f"Expected {tm.num_frames} frames, got {extr.num_frames}"
+    )
+    assert extr.start_time == start_time, (
+        f"Expected {start_time} start time, got {extr.start_time}"
+    )
+    assert extr.end_time == end_time, (
+        f"Expected {end_time} end time, got {extr.end_time}"
+    )
 
 
 def test_extract_time_second_half(tm: TemporalMatrix) -> None:
@@ -84,9 +108,15 @@ def test_extract_time_second_half(tm: TemporalMatrix) -> None:
     end_time = tm.end_time
     extr = tm.extract(start_time, end_time)
 
-    assert extr.num_frames == tm.num_frames - tm.num_frames // 2
-    assert extr.start_time == start_time
-    assert extr.end_time == end_time
+    assert extr.num_frames == tm.num_frames - tm.num_frames // 2, (
+        f"Expected {tm.num_frames - tm.num_frames // 2} frames, got {{extr.num_frames}}"
+    )
+    assert extr.start_time == start_time, (
+        f"Expected {start_time} start time, got {extr.start_time}"
+    )
+    assert extr.end_time == end_time, (
+        f"Expected {end_time} end time, got {extr.end_time}"
+    )
 
 
 def test_extract_time_first_half(tm: TemporalMatrix) -> None:
@@ -97,9 +127,15 @@ def test_extract_time_first_half(tm: TemporalMatrix) -> None:
     end_time = frame_end[tm.num_frames // 2]
     extr = tm.extract(start_time, end_time)
 
-    assert extr.num_frames == tm.num_frames // 2 + 1
-    assert extr.start_time == start_time
-    assert extr.end_time == end_time
+    assert extr.num_frames == tm.num_frames // 2 + 1, (
+        f"Expected {tm.num_frames // 2 + 1} frames, got {extr.num_frames}"
+    )
+    assert extr.start_time == start_time, (
+        f"Expected {start_time} start time, got {extr.start_time}"
+    )
+    assert extr.end_time == end_time, (
+        f"Expected {end_time} end time, got {extr.end_time}"
+    )
 
 
 def test_extract_time_middle(tm: TemporalMatrix) -> None:
@@ -111,9 +147,15 @@ def test_extract_time_middle(tm: TemporalMatrix) -> None:
     end_time = frame_end[-2]
     extr = tm.extract(start_time, end_time)
 
-    assert extr.num_frames == tm.num_frames - 2
-    assert extr.start_time == start_time
-    assert extr.end_time == end_time
+    assert extr.num_frames == tm.num_frames - 2, (
+        f"Expected {tm.num_frames - 2} frames, got {extr.num_frames}"
+    )
+    assert extr.start_time == start_time, (
+        f"Expected {start_time} start time, got {extr.start_time}"
+    )
+    assert extr.end_time == end_time, (
+        f"Expected {end_time} end time, got {extr.end_time}"
+    )
 
 
 def test_extract_time_middle_fuzzy(tm: TemporalMatrix) -> None:
@@ -125,17 +167,23 @@ def test_extract_time_middle_fuzzy(tm: TemporalMatrix) -> None:
     end_time = frame_end[-2] - 6
     extr = tm.extract(start_time, end_time)
 
-    assert extr.num_frames == tm.num_frames - 4
-    assert extr.start_time == frame_start[2]
-    assert extr.end_time == frame_end[-3]
+    assert extr.num_frames == tm.num_frames - 4, (
+        f"Expected {tm.num_frames - 4} frames, got {extr.num_frames}"
+    )
+    assert extr.start_time == frame_start[2], (
+        f"Expected {frame_start[2]} start time, got {extr.start_time}"
+    )
+    assert extr.end_time == frame_end[-3], (
+        f"Expected {frame_end[-3]} end time, got {extr.end_time}"
+    )
 
 
 def test_overlap_with_self(tm: TemporalMatrix) -> None:
     """Test overlap with self."""
     expected_result = [
-        (tm.frame_start[i], tm.frame_end[i]) for i in range(0, tm.num_frames)
+        (tm.frame_start[i], tm.frame_end[i]) for i in range(tm.num_frames)
     ]
-    assert tm.overlap_with(tm) == expected_result
+    assert tm.overlap_with(tm) == expected_result, "Overlap with self is wrong"
 
 
 def test_overlap_with_nonoverlapping(tm: TemporalMatrix) -> None:
@@ -145,7 +193,7 @@ def test_overlap_with_nonoverlapping(tm: TemporalMatrix) -> None:
         frame_start=np.array([tm.end_time, tm.end_time + 100], dtype=float),
         frame_duration=np.array([100, 100]),
     )
-    assert tm.overlap_with(other) == []
+    assert tm.overlap_with(other) == [], "Overlap should be empty"
 
 
 def test_overlap_with_one_frame_not_subset(tm: TemporalMatrix) -> None:
@@ -155,8 +203,10 @@ def test_overlap_with_one_frame_not_subset(tm: TemporalMatrix) -> None:
         frame_start=np.array([tm.frame_start[-1], tm.end_time], dtype=float),
         frame_duration=np.array([tm.frame_duration[-1]] * 2),
     )
-    assert tm.overlap_with(other) == [(tm.frame_start[-1], tm.end_time)]
-    assert other.overlap_with(tm) == [(tm.frame_start[-1], tm.end_time)]
+
+    msg = "Overlap is wrong"
+    assert tm.overlap_with(other) == [(tm.frame_start[-1], tm.end_time)], msg
+    assert other.overlap_with(tm) == [(tm.frame_start[-1], tm.end_time)], msg
 
 
 def test_overlap_with_subset(tm: TemporalMatrix) -> None:
@@ -169,8 +219,10 @@ def test_overlap_with_subset(tm: TemporalMatrix) -> None:
     expected_result = [
         (tm.frame_start[i], tm.frame_end[i]) for i in range(1, tm.num_frames - 1)
     ]
-    assert tm.overlap_with(other) == expected_result
-    assert other.overlap_with(tm) == expected_result
+
+    msg = "Overlap is wrong"
+    assert tm.overlap_with(other) == expected_result, msg
+    assert other.overlap_with(tm) == expected_result, msg
 
 
 def test_overlap_two_frames_within_one(tm: TemporalMatrix) -> None:
@@ -181,10 +233,11 @@ def test_overlap_two_frames_within_one(tm: TemporalMatrix) -> None:
         frame_start=np.array([tm.start_time, mid_frame]),
         frame_duration=np.array([tm.frame_duration[0] / 2] * 2),
     )
+
     assert tm.overlap_with(other) == [
         (tm.start_time, mid_frame),
         (mid_frame, tm.frame_end[0]),
-    ]
+    ], "Overlap is wrong"
 
 
 def test_concatenate(tm: TemporalMatrix) -> None:
@@ -199,25 +252,29 @@ def test_concatenate(tm: TemporalMatrix) -> None:
     tm2 = TemporalMatrix(dataobj, frame_start, frame_duration)
     tm_concat = tm.concatenate(tm2)
 
-    assert tm_concat.num_frames == tm.num_frames + tm2.num_frames
+    assert tm_concat.num_frames == tm.num_frames + tm2.num_frames, (
+        f"Expected {tm.num_frames + tm2.num_frames} frames, got {tm_concat.num_frames}"
+    )
 
 
 def test_dynamic_mean_unweighted(tm: TemporalMatrix) -> None:
     """Test unweighted dynamic mean."""
-    assert tm.dynamic_mean() == tm.dataobj.mean()
+    assert tm.dynamic_mean() == tm.dataobj.mean(), "Wrong dynamic mean"
 
 
 def test_dynamic_mean_frame_duration_weighted(tm: TemporalMatrix) -> None:
     """Test frame duration weighted dynamic mean."""
     expected_result = (tm.dataobj * tm.frame_duration).sum() / tm.frame_duration.sum()
-    assert tm.dynamic_mean(weight_by="frame_duration") == expected_result
+    assert tm.dynamic_mean(weight_by="frame_duration") == expected_result, (
+        "Wrong dynamic mean"
+    )
 
 
 def test_dynamic_mean_custom_weighted(tm: TemporalMatrix) -> None:
     """Test custom weighted dynamic mean."""
     weights = np.zeros((tm.num_frames,))
     weights[-1] = 10
-    assert tm.dynamic_mean(weight_by=weights) == tm.dataobj[:, -1]
+    assert tm.dynamic_mean(weight_by=weights) == tm.dataobj[:, -1], "Wrong dynamic mean"
 
 
 def test_dynamic_mean_trapz(tm: TemporalMatrix) -> None:
@@ -226,23 +283,23 @@ def test_dynamic_mean_trapz(tm: TemporalMatrix) -> None:
         tm.dynamic_mean(integration_type="trapz"),
         tm.dynamic_mean(weight_by="frame_duration"),
         rtol=0.03,
-    )
+    ), "Wrong dynamic mean"
 
 
 def test_cumulative_integral(tm: TemporalMatrix) -> None:
     """Test cumulative integral."""
     res = tm.cumulative_integral(integration_type="rect")
     expected = np.array([0, 50, 150, 350, 550, 950, 1350]) * 60
-    assert res.shape == (tm.num_elements, tm.num_frames)
-    assert np.all(expected == res)
+    assert res.shape == (tm.num_elements, tm.num_frames), "Wrong shape"
+    assert np.all(expected == res), "Wrong integration"
 
 
 def test_cumulative_integral_trapz(tm: TemporalMatrix) -> None:
     """Test cumulative trapezoidal integral based on frame mid times."""
     res = tm.cumulative_integral("trapz")
     expected = np.array([0, 1500, 6000, 15000, 27000, 45000, 69000])
-    assert res.shape == (tm.num_elements, tm.num_frames)
-    assert np.all(expected == res)
+    assert res.shape == (tm.num_elements, tm.num_frames), "Wrong shape"
+    assert np.all(expected == res), "Wrong integration"
 
 
 def test_cumulative_integral_broadcasting() -> None:
@@ -254,5 +311,5 @@ def test_cumulative_integral_broadcasting() -> None:
     tm2 = TemporalMatrix(dataobj, frame_start, frame_duration)
     res = tm2.cumulative_integral(integration_type="rect")
     expected = np.array([[0, 50], [0, 100]])
-    assert res.shape == (tm2.num_elements, tm2.num_frames)
-    assert np.all(expected == res)
+    assert res.shape == (tm2.num_elements, tm2.num_frames), "Wrong shape"
+    assert np.all(expected == res), "Wrong integration"

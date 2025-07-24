@@ -1,4 +1,5 @@
 """Nox sessions."""
+
 import os
 import shlex
 import shutil
@@ -8,10 +9,8 @@ from textwrap import dedent
 
 import nox
 
-
 try:
-    from nox_poetry import Session
-    from nox_poetry import session
+    from nox_poetry import Session, session
 except ImportError:
     message = f"""\
     Nox failed to import the 'nox-poetry' package.
@@ -23,11 +22,10 @@ except ImportError:
 
 
 package = "dynamicpet"
-python_versions = ["3.11"]
+python_versions = ["3.12", "3.11"]
 nox.needs_version = ">= 2021.6.6"
 nox.options.sessions = (
     "pre-commit",
-    "safety",
     "mypy",
     "tests",
     "typeguard",
@@ -45,6 +43,7 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 
     Args:
         session: The Session object.
+
     """
     assert session.bin is not None  # noqa: S101
 
@@ -96,7 +95,8 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
         text = hook.read_text()
 
         if not any(
-            Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text
+            (Path("A") == Path("a") and bindir.lower() in text.lower())
+            or bindir in text
             for bindir in bindirs
         ):
             continue
@@ -137,19 +137,11 @@ def precommit(session: Session) -> None:
         activate_virtualenv_in_precommit_hooks(session)
 
 
-@session(python=python_versions[0])
-def safety(session: Session) -> None:
-    """Scan dependencies for insecure packages."""
-    requirements = session.poetry.export_requirements()
-    session.install("safety")
-    session.run("safety", "check", "--full-report", f"--file={requirements}")
-
-
 @session(python=python_versions)
 def mypy(session: Session) -> None:
     """Type-check using mypy."""
     args = session.posargs or ["src", "tests", "docs/conf.py"]
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("mypy", "pytest", "pytest-mock", "requests", "types-requests")
     session.run("mypy", *args)
     if not session.posargs:
@@ -159,10 +151,10 @@ def mypy(session: Session) -> None:
 @session(python=python_versions)
 def tests(session: Session) -> None:
     """Run the test suite."""
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("coverage[toml]", "pytest", "pytest-mock", "pygments", "requests")
     try:
-        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+        session.run("coverage", "run", "-p", "-m", "pytest", *session.posargs)
     finally:
         if session.interactive:
             session.notify("coverage", posargs=[])
@@ -184,7 +176,7 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(session: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("pytest", "pytest-mock", "typeguard", "pygments", "requests")
     session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
 
@@ -199,7 +191,7 @@ def xdoctest(session: Session) -> None:
         if "FORCE_COLOR" in os.environ:
             args.append("--colored=1")
 
-    session.install(".[kinfitr]")
+    session.install(".")
     session.install("xdoctest[colors]")
     session.run("python", "-m", "xdoctest", *args)
 
@@ -211,12 +203,16 @@ def docs_build(session: Session) -> None:
     if not session.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    session.install(".[kinfitr]")
-    session.install("sphinx", "sphinx-click", "furo", "myst-parser")
+    session.install(".")
+    session.install("sphinx-click", "furo", "myst_nb", "matplotlib", "nilearn")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
         shutil.rmtree(build_dir)
+
+    jupyter_dir = Path("docs", "jupyter_execute")
+    if jupyter_dir.exists():
+        shutil.rmtree(jupyter_dir)
 
     session.run("sphinx-build", *args)
 
@@ -225,8 +221,15 @@ def docs_build(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
     args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".[kinfitr]")
-    session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
+    session.install(".")
+    session.install(
+        "sphinx-autobuild",
+        "sphinx-click",
+        "furo",
+        "myst_nb",
+        "matplotlib",
+        "nilearn",
+    )
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():

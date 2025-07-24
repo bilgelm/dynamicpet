@@ -1,23 +1,30 @@
 """PETBIDSImage class."""
 
-import os.path as op
+from __future__ import annotations
+
 from copy import deepcopy
-from os import PathLike
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from nibabel.loadsave import load as nib_load
-from nibabel.spatialimages import SpatialImage
 
-from ..temporalobject.temporalimage import TemporalImage
-from ..temporalobject.temporalimage import image_maker
-from ..typing_utils import RealNumber
-from .petbidsjson import PetBidsJson
-from .petbidsjson import get_frametiming_in_mins
-from .petbidsjson import read_json
-from .petbidsjson import update_frametiming_from
-from .petbidsjson import write_json
-from .petbidsobject import PETBIDSObject
+from dynamicpet.petbids.petbidsjson import (
+    PetBidsJson,
+    get_frametiming_in_mins,
+    read_json,
+    update_frametiming_from,
+    write_json,
+)
+from dynamicpet.petbids.petbidsobject import PETBIDSObject
+from dynamicpet.temporalobject.temporalimage import TemporalImage, image_maker
+
+if TYPE_CHECKING:
+    from os import PathLike
+
+    from nibabel.spatialimages import SpatialImage
+
+    from dynamicpet.typing_utils import RealNumber
 
 
 class PETBIDSImage(TemporalImage, PETBIDSObject):
@@ -32,6 +39,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         frame_start: vector containing the start times of each frame, in min
         frame_duration: vector containing the durations of each frame, in min
         json_dict: PET-BIDS json dictionary
+
     """
 
     def __init__(self, img: SpatialImage, json_dict: PetBidsJson) -> None:
@@ -40,6 +48,7 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         Args:
             img: a SpatialImage object with a 3-D or 4-D dataobj
             json_dict: PET-BIDS json dictionary
+
         """
         frame_start, frame_duration = get_frametiming_in_mins(json_dict)
 
@@ -48,23 +57,23 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         # need to make a copy of json_dict before storing
         self.json_dict: PetBidsJson = deepcopy(json_dict)
 
-    def extract(self, start_time: RealNumber, end_time: RealNumber) -> "PETBIDSImage":
+    def extract(self, start_time: RealNumber, end_time: RealNumber) -> PETBIDSImage:
         """Extract a temporally shorter PETBIDSImage from a PETBIDSImage.
 
         Args:
-            start_time: time at which to begin, inclusive
-            end_time: time at which to stop, inclusive
+            start_time: time (min) at which to begin relative to TimeZero, incl.
+            end_time: time (min) at which to stop relative to TimeZero, incl.
 
         Returns:
-            extracted_img: extracted PETBIDSImage
+            extracted PETBIDSImage
+
         """
         extracted_img = super().extract(start_time, end_time)
         json_dict = update_frametiming_from(self.json_dict, extracted_img)
 
-        extract_res = PETBIDSImage(extracted_img.img, json_dict)
-        return extract_res
+        return PETBIDSImage(extracted_img.img, json_dict)
 
-    def concatenate(self, other: "PETBIDSImage") -> "PETBIDSImage":  # type: ignore
+    def concatenate(self, other: PETBIDSImage) -> PETBIDSImage:  # type: ignore[override]
         """Concatenate another PETBIDSImage at the end (in time).
 
         Args:
@@ -73,69 +82,92 @@ class PETBIDSImage(TemporalImage, PETBIDSObject):
         Returns:
             concatenated PETBIDSImage
 
-        Raises:
-            ValueError: PETBIDSImages are from different radionuclides
         """
-        if (
-            self.json_dict["TracerRadionuclide"]
-            != other.json_dict["TracerRadionuclide"]
-        ):
-            raise ValueError("Cannot concatenate data from different radionuclides")
+        newdecaycorrecttime, original_anchor = self._decay_correct_offset(other)
+        other = other.decay_correct(decaycorrecttime=newdecaycorrecttime)
 
         concat_img = super().concatenate(other)
         json_dict = update_frametiming_from(self.json_dict, concat_img)
 
         concat_res = PETBIDSImage(concat_img.img, json_dict)
+        concat_res.set_timezero(anchor=original_anchor)
 
         return concat_res
 
-    def decay_correct(self) -> "PETBIDSImage":
-        """Return PETBIDSImage decay corrected to time zero."""
-        tacs = self.get_decay_corrected_tacs()
-        # Create a SpatialImage of the same class as self.img
-        # image_maker = self.img.__class__
-        # corrected_img = image_maker(
-        #     np.reshape(tacs, self.shape), self.img.affine, self.img.header
-        # )
-        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
+    def decay_correct(self, decaycorrecttime: float = 0) -> PETBIDSImage:
+        """Return decay corrected PETBIDSImage.
 
-        return PETBIDSImage(corrected_img, self.json_dict)
+        This code is written to work with both ScanStart and InjectionStart as
+        TimeZero anchors, even though the internal representation is always
+        with an InjectionStart anchor.
 
-    def decay_uncorrect(self) -> "PETBIDSImage":
-        """Return decay uncorrected PETBIDSImage.
+        Args:
+            decaycorrecttime: time to decay correct to, relative to time zero
 
-        This function assumes decay correction was to time zero.
+        Returns:
+            decay corrected PET image
+
         """
+        tacs = self.get_decay_corrected_tacs(decaycorrecttime)
+        # Create a SpatialImage of the same class as self.img
+        uncorrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
+
+        json_dict = deepcopy(self.json_dict)
+        json_dict["ImageDecayCorrected"] = True
+        json_dict["ImageDecayCorrectionTime"] = (
+            decaycorrecttime + json_dict["ScanStart"] + json_dict["InjectionStart"]
+        )
+
+        return PETBIDSImage(uncorrected_img, json_dict)
+
+    def decay_uncorrect(self) -> PETBIDSImage:
+        """Return decay uncorrected PETBIDSImage."""
         tacs = self.get_decay_uncorrected_tacs()
         # Create a SpatialImage of the same class as self.img
-        # image_maker = self.img.__class__
-        # corrected_img = image_maker(
-        #     np.reshape(tacs, self.shape), self.img.affine, self.img.header
-        # )
-        corrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
+        uncorrected_img = image_maker(np.reshape(tacs, self.shape), self.img)
 
-        return PETBIDSImage(corrected_img, self.json_dict)
+        json_dict = deepcopy(self.json_dict)
+        json_dict["ImageDecayCorrected"] = False
+        # PET-BIDS still requires "ImageDecayCorrectionTime" tag, so we don't
+        # do anything about it
 
-    def to_filename(self, filename: str | PathLike[str]) -> None:
+        return PETBIDSImage(uncorrected_img, json_dict)
+
+    def to_filename(
+        self,
+        filename: str | PathLike[str],
+        anchor: Literal["InjectionStart", "ScanStart"] = "InjectionStart",
+        *,
+        save_json: bool = False,
+    ) -> None:
         """Save to file.
 
         Args:
             filename: file name for the PET image output
+            save_json: whether the PET-BIDS json side car should be saved
+            anchor: time anchor. The corresponding tag in the PET-BIDS json will
+                    be set to zero (with appropriate offsets applied to other
+                    tags).
+
         """
         self.img.to_filename(filename)
 
-        fbase, fext = op.splitext(filename)
-        if fext == ".gz":
-            fbase = op.splitext(fbase)[0]
-        jsonfilename = fbase + ".json"
+        if save_json:
+            self.set_timezero(anchor)
 
-        write_json(self.json_dict, jsonfilename)
+            fname = Path(filename)
+            if fname.suffix == ".gz":
+                jsonfilename = fname.with_suffix("").with_suffix(".json")
+            else:
+                jsonfilename = fname.with_suffix(".json")
+
+            write_json(self.json_dict, jsonfilename)
 
 
 def load(
     filename: str | PathLike[str],
     jsonfilename: str | PathLike[str] | None = None,
-    **kwargs: Any
+    **kwargs: Any,  # noqa: ANN401
 ) -> PETBIDSImage:
     """Load a PET image and accompanying BIDS json.
 
@@ -149,20 +181,21 @@ def load(
 
     Raises:
         FileNotFoundError: filename or jsonfilename was not found
+
     """
-    if not op.exists(filename):
-        raise FileNotFoundError("No such file: '%s'" % filename)
+    fname = Path(filename)
+    if not fname.exists():
+        msg = f"No such file: {filename}"
+        raise FileNotFoundError(msg)
 
     if jsonfilename is None:
-        jsonbase, jsonext = op.splitext(filename)
-        if jsonext == ".gz":
-            jsonbase = op.splitext(jsonbase)[0]
-        jsonfilename = jsonbase + ".json"
+        if fname.suffix == ".gz":
+            jsonfilename = fname.with_suffix("").with_suffix(".json")
+        else:
+            jsonfilename = fname.with_suffix(".json")
 
-    img: SpatialImage = nib_load(filename, **kwargs)  # type: ignore
-    # img = SpatialImage.from_filename(filename, **kwargs)
+    img: SpatialImage = nib_load(filename, **kwargs)  # type: ignore[assignment]
 
     json_dict: PetBidsJson = read_json(jsonfilename)
 
-    ti = PETBIDSImage(img, json_dict)
-    return ti
+    return PETBIDSImage(img, json_dict)

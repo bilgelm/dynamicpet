@@ -11,7 +11,8 @@ end-before: <!-- github-only -->
 ```{toctree}
 ---
 hidden:
-maxdepth: 1
+maxdepth: 2
+caption: Contents:
 ---
 
 usage
@@ -20,4 +21,16 @@ contributing
 Code of Conduct <codeofconduct>
 License <license>
 Changelog <https://github.com/bilgelm/dynamicpet/releases>
+```
+
+```{toctree}
+---
+maxdepth: 1
+caption: Notebooks:
+---
+
+notebooks/basics
+notebooks/denoise
+notebooks/decay_correct
+notebooks/suvr
 ```

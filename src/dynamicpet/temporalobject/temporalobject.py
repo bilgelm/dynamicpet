@@ -1,19 +1,19 @@
 """TemporalObject abstract base class."""
 
+from __future__ import annotations
+
 import warnings
-from abc import ABC
-from abc import abstractmethod
-from typing import Any
-from typing import Generic
-from typing import Literal
-from typing import TypeVar
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 
 import numpy as np
-from scipy.integrate import cumulative_trapezoid  # type: ignore
+from scipy.integrate import (  # type: ignore[import-untyped]
+    cumulative_trapezoid,
+    trapezoid,
+)
 
-from ..typing_utils import NumpyRealNumberArray
-from ..typing_utils import RealNumber
-
+if TYPE_CHECKING:
+    from dynamicpet.typing_utils import NumpyNumberArray, RealNumber
 
 T = TypeVar("T", bound="TemporalObject[Any]")
 
@@ -31,10 +31,11 @@ class TemporalObject(Generic[T], ABC):
     Attributes:
         frame_start: vector containing the start times of each frame
         frame_duration: vector containing the durations of each frame
+
     """
 
-    frame_start: NumpyRealNumberArray
-    frame_duration: NumpyRealNumberArray
+    frame_start: NumpyNumberArray
+    frame_duration: NumpyNumberArray
 
     @property
     def shape(self) -> tuple[int, ...]:
@@ -52,12 +53,12 @@ class TemporalObject(Generic[T], ABC):
         return len(self.frame_start)
 
     @property
-    def frame_mid(self) -> NumpyRealNumberArray:
+    def frame_mid(self) -> NumpyNumberArray:
         """Get an array of mid times for each frame."""
         return 0.5 * (self.frame_start + self.frame_end)
 
     @property
-    def frame_end(self) -> NumpyRealNumberArray:
+    def frame_end(self) -> NumpyNumberArray:
         """Get an array of end times for each frame."""
         return self.frame_start + self.frame_duration
 
@@ -71,12 +72,19 @@ class TemporalObject(Generic[T], ABC):
         """Get the ending time of last frame."""
         return float(self.frame_end[-1])
 
+    @property
+    def total_duration(self) -> float:
+        """Get total scan duration (including any gaps)."""
+        return self.end_time - self.start_time
+
     def has_gaps(self) -> bool:
         """Check if there are any time gaps between frames."""
-        return self.end_time - self.start_time > float(sum(self.frame_duration))
+        return self.total_duration > float(sum(self.frame_duration))
 
     def get_idx_extract_time(
-        self, start_time: RealNumber, end_time: RealNumber
+        self,
+        start_time: RealNumber,
+        end_time: RealNumber,
     ) -> tuple[int, int]:
         """Get the start and end indices for extracting a time interval.
 
@@ -90,9 +98,11 @@ class TemporalObject(Generic[T], ABC):
 
         Raises:
             TimingError: extraction times are out of bound
+
         """
         if start_time >= end_time:
-            raise TimingError("Start time must be before end time")
+            msg = "Start time must be before end time"
+            raise TimingError(msg)
 
         if start_time < self.frame_start[0]:
             start_time = self.frame_start[0]
@@ -106,9 +116,8 @@ class TemporalObject(Generic[T], ABC):
                 stacklevel=2,
             )
         elif start_time > self.frame_end[-1]:
-            raise TimingError(
-                "Start time is beyond the time covered by the time series data!"
-            )
+            msg = "Start time is beyond the time covered by the time series data!"
+            raise TimingError(msg)
 
         # find first frame with frame_start at or shortest after start_time
         start_index: int = next(
@@ -128,9 +137,8 @@ class TemporalObject(Generic[T], ABC):
                 stacklevel=2,
             )
         elif end_time < self.frame_start[0]:
-            raise TimingError(
-                "End time is prior to the time covered by time series data!"
-            )
+            msg = "End time is prior to the time covered by time series data!"
+            raise TimingError(msg)
 
         # find the first time frame with frame_end shortest after the specified end time
         end_index: int = next(
@@ -140,9 +148,10 @@ class TemporalObject(Generic[T], ABC):
 
         # another sanity check, mainly to make sure that start_index!=end_index
         if not start_index < end_index:
-            raise TimingError("Start index must be smaller than end index")
+            msg = "Start index must be smaller than end index"
+            raise TimingError(msg)
 
-        if not self.frame_start[start_index] == start_time:
+        if self.frame_start[start_index] != start_time:
             warnings.warn(
                 (
                     f"Specified start time {start_time} "
@@ -153,7 +162,7 @@ class TemporalObject(Generic[T], ABC):
                 RuntimeWarning,
                 stacklevel=2,
             )
-        if not self.frame_end[end_index - 1] == end_time:
+        if self.frame_end[end_index - 1] != end_time:
             warnings.warn(
                 (
                     f"Specified end time {end_time} "
@@ -181,6 +190,7 @@ class TemporalObject(Generic[T], ABC):
 
         Returns:
             list of tuples listing frame start and end times.
+
         """
         overlap_segs: list[tuple[RealNumber, RealNumber]] = []
         i = j = 0
@@ -217,12 +227,11 @@ class TemporalObject(Generic[T], ABC):
 
     @property
     @abstractmethod
-    def dataobj(self) -> NumpyRealNumberArray:
+    def dataobj(self) -> NumpyNumberArray:
         """Get data object, which can be a 2-D or a 3-D matrix.
 
         The last dimension of dataobj corresponds to time.
         """
-        pass
 
     @abstractmethod
     def extract(self, start_time: RealNumber, end_time: RealNumber) -> T:
@@ -234,8 +243,8 @@ class TemporalObject(Generic[T], ABC):
 
         Returns:
             extracted time interval
+
         """
-        pass
 
     @abstractmethod
     def concatenate(self, other: T) -> T:
@@ -246,8 +255,8 @@ class TemporalObject(Generic[T], ABC):
 
         Returns:
             concatenated TemporalObject
+
         """
-        pass
 
     def split(self, split_time: RealNumber) -> tuple[T, T]:
         """Split into two TemporalObjects, preserving total n of frames.
@@ -258,14 +267,16 @@ class TemporalObject(Generic[T], ABC):
         Returns:
             first_img: first of the two split TemporalObjects, not including split_time
             second_img: second of the two split TemporalObjects, including split_time
+
         """
         first_img = self.extract(self.start_time, split_time)
         second_img = self.extract(split_time, self.end_time)
         return first_img, second_img
 
     def get_weights(
-        self, weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None
-    ) -> NumpyRealNumberArray:
+        self,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
+    ) -> NumpyNumberArray:
         """Get weights for each time frame.
 
         Args:
@@ -279,26 +290,25 @@ class TemporalObject(Generic[T], ABC):
 
         Raises:
             ValueError: invalid weights
+
         """
-        delta: NumpyRealNumberArray
+        delta: NumpyNumberArray
         if weight_by is None:
             delta = np.ones_like(self.frame_duration)
-        elif isinstance(weight_by, str):
-            if weight_by == "frame_duration":
-                delta = self.frame_duration
-            else:
-                raise ValueError("{weight_by} is not a valid weights argument")
+        elif isinstance(weight_by, str) and weight_by == "frame_duration":
+            delta = self.frame_duration
         elif weight_by.ndim == 1 and len(weight_by) == self.num_frames:
             delta = weight_by
         else:
-            raise ValueError("Weights should be None, frame_duration, or a numpy array")
+            msg = "Weights should be None, frame_duration, or a numpy array"
+            raise ValueError(msg)
         return delta
 
     def _dynamic_mean(
         self,
-        weight_by: WEIGHT_OPTS | NumpyRealNumberArray | None = None,
+        weight_by: WEIGHT_OPTS | NumpyNumberArray | None = None,
         integration_type: INTEGRATION_TYPE_OPTS = "rect",
-    ) -> NumpyRealNumberArray:
+    ) -> NumpyNumberArray:
         """Compute the (weighted) dynamic mean over time.
 
         Args:
@@ -311,13 +321,13 @@ class TemporalObject(Generic[T], ABC):
         Returns:
             a 1-D array of weighted temporal averages
 
-        Raises:
-            ValueError: invalid integration type
         """
-        dyn_mean: NumpyRealNumberArray
+        dyn_mean: NumpyNumberArray
         if integration_type == "rect":
             dyn_mean = np.average(
-                self.dataobj, axis=-1, weights=self.get_weights(weight_by)
+                self.dataobj,  # type: ignore[arg-type]
+                axis=-1,
+                weights=self.get_weights(weight_by),
             )
         elif integration_type == "trapz":
             if weight_by:
@@ -329,17 +339,16 @@ class TemporalObject(Generic[T], ABC):
                     RuntimeWarning,
                     stacklevel=2,
                 )
-            dyn_mean = np.trapz(self.dataobj, self.frame_mid) / (
+            dyn_mean = trapezoid(self.dataobj, self.frame_mid) / (
                 self.frame_mid[-1] - self.frame_mid[0]
             )
-        else:
-            raise ValueError("integration_type" + integration_type + "is invalid")
 
         return dyn_mean
 
     def cumulative_integral(
-        self, integration_type: INTEGRATION_TYPE_OPTS = "trapz"
-    ) -> NumpyRealNumberArray:
+        self,
+        integration_type: INTEGRATION_TYPE_OPTS = "trapz",
+    ) -> NumpyNumberArray:
         """Cumulative integration starting at t=0 and ending at each frame_end.
 
         If start_time > 0, the triangular area between (t=0, 0) and
@@ -354,6 +363,7 @@ class TemporalObject(Generic[T], ABC):
 
         Raises:
             ValueError: invalid integration type
+
         """
         if self.has_gaps():
             warnings.warn(
@@ -379,7 +389,7 @@ class TemporalObject(Generic[T], ABC):
         # if start_time > 0, then we assume activity linearly increased from 0
         # to values attained in first frame
         initial = self.start_time * self.dataobj[..., 0] / 2
-        res: NumpyRealNumberArray
+        res: NumpyNumberArray
 
         if integration_type == "rect":
             res = (
@@ -397,7 +407,8 @@ class TemporalObject(Generic[T], ABC):
 
 
 def check_frametiming(
-    frame_start: NumpyRealNumberArray, frame_duration: NumpyRealNumberArray
+    frame_start: NumpyNumberArray,
+    frame_duration: NumpyNumberArray,
 ) -> None:
     """Check if frame timing is valid.
 
@@ -407,21 +418,27 @@ def check_frametiming(
 
     Raises:
         TimingError: inconsistent timing info
+
     """
-    if not len(frame_start) == len(frame_duration):
-        raise TimingError("Unequal number of frame start and end times")
+    if len(frame_start) != len(frame_duration):
+        msg = "Unequal number of frame start and end times"
+        raise TimingError(msg)
 
     # in the unusual but possible case where injection occurs after scan start,
     # some FrameTimesStart may negative, so we don't check if start >= 0
     if frame_duration[0] <= 0:
-        raise TimingError("Non-positive frame duration at frame 0")
+        msg = "Non-positive frame duration at frame 0"
+        raise TimingError(msg)
     for i in range(1, len(frame_start)):
         if frame_duration[i] <= 0:
-            raise TimingError(f"Non-positive frame duration at frame {i}")
+            msg = f"Non-positive frame duration at frame {i}"
+            raise TimingError(msg)
         if frame_start[i - 1] >= frame_start[i]:
-            raise TimingError(
+            msg = (
                 "Non-increasing frame start times: "
                 f"{frame_start[i - 1]}, {frame_start[i]}"
             )
+            raise TimingError(msg)
         if frame_start[i - 1] + frame_duration[i - 1] > frame_start[i]:
-            raise TimingError(f"Previous frame {i - 1} overlaps with current frame {i}")
+            msg = f"Previous frame {i - 1} overlaps with current frame {i}"
+            raise TimingError(msg)
